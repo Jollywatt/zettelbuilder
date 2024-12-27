@@ -1,0 +1,28 @@
+export const snapshot = {};
+
+snapshot[`find notes 1`] = `
+{
+  a: {
+    files: {
+      md: "test/example-notes/a.note.md",
+    },
+    kind: "Markdown",
+    name: "a",
+  },
+  b: {
+    files: {
+      txt: "test/example-notes/b.note.txt",
+    },
+    kind: "plain text",
+    name: "b",
+  },
+  c: {
+    files: {
+      pdf: "test/example-notes/c.note.pdf",
+      typ: "test/example-notes/c.note.typ",
+    },
+    kind: "Typst PDF",
+    name: "c",
+  },
+}
+`;
