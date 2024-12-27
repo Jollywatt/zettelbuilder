@@ -1,4 +1,5 @@
 import { walk } from "@std/fs"
+import render from "preact-render-to-string"
 
 const combos: { [kind: string]: Set<string> } = {
 	"Markdown": new Set(["md"]),
@@ -61,7 +62,10 @@ export async function findNotes(src: string) {
 	return notes
 }
 
-// Learn more at https://docs.deno.com/runtime/manual/examples/module_metadata#concepts
-if (import.meta.main) {
-	console.log("hello")
+function Main() {
+	return (
+		<div>
+			This is my site
+		</div>
+	)
 }
