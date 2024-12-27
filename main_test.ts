@@ -1,6 +1,10 @@
 import { assertEquals } from "@std/assert"
-import { add } from "./main.tsx"
+import { findNotes } from "./main.tsx"
 
-Deno.test(function addTest() {
-	assertEquals(add(2, 3), 5)
+Deno.test({
+	name: "read file test",
+	permissions: { read: true },
+	async fn() {
+		console.log(await findNotes("test"))
+	},
 })

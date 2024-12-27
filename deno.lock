@@ -2,9 +2,12 @@
   "version": "4",
   "specifiers": {
     "jsr:@std/assert@1": "1.0.10",
+    "jsr:@std/fs@^1.0.8": "1.0.8",
     "jsr:@std/internal@^1.0.5": "1.0.5",
+    "jsr:@std/path@^1.0.8": "1.0.8",
     "npm:@types/react@^19.0.2": "19.0.2",
-    "npm:react@*": "19.0.0"
+    "npm:react@*": "19.0.0",
+    "npm:walk-it@*": "5.0.1"
   },
   "jsr": {
     "@std/assert@1.0.10": {
@@ -13,8 +16,17 @@
         "jsr:@std/internal"
       ]
     },
+    "@std/fs@1.0.8": {
+      "integrity": "161c721b6f9400b8100a851b6f4061431c538b204bb76c501d02c508995cffe0",
+      "dependencies": [
+        "jsr:@std/path"
+      ]
+    },
     "@std/internal@1.0.5": {
       "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
+    },
+    "@std/path@1.0.8": {
+      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
     }
   },
   "npm": {
@@ -29,11 +41,15 @@
     },
     "react@19.0.0": {
       "integrity": "sha512-V8AVnmPIICiWpGfm6GLzCR/W5FXLchHop40W4nXBmdlEceh16rCN8O8LNWm5bh5XUX91fh7KpA+W0TgMKmgTpQ=="
+    },
+    "walk-it@5.0.1": {
+      "integrity": "sha512-kci6AJedTdYC5AlJ2PMRSxwZzfe/0jzmmH1J/xcVWSglR8+fSOcYAzMiMiXc+BqX+PcxSg+UI0J3pcSIAQUptQ=="
     }
   },
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@1",
+      "jsr:@std/fs@^1.0.8",
       "npm:@types/react@^19.0.2",
       "npm:react@*"
     ]

@@ -1,0 +1,3 @@
+Example plain text note
+
+Not that exciting.
