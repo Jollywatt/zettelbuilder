@@ -16,9 +16,9 @@ Deno.test("note detection", async (shot) => {
 })
 
 Deno.test("find notes", async function (shot) {
-	const paths = await findNoteFiles("test/example-notes")
-	const notes = detectNotes(paths)
-	// await assertSnapshot(shot, notes);
+	const src = "test/example-notes"
+	const paths = await findNoteFiles(src)
+	const notes = detectNotes(paths, { root: src })
 
 	console.log(notes)
 })

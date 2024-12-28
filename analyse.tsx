@@ -2,10 +2,9 @@ import { walk } from "@std/fs"
 import assert from "node:assert"
 import * as Path from "@std/path"
 
-interface Note {
+export interface Note {
 	name: string
 	kind: string | null
-	// dir: string,
 	dir: Array<string>
 	files: { [ext: string]: string }
 }
@@ -33,17 +32,22 @@ export async function findNoteFiles(dir: string) {
 	})
 
 	const entries = await Array.fromAsync(iter)
-	return entries.map((entry) => entry.path.slice(dirnorm.length + 1))
+	return entries.map((entry) => entry.path)
 }
 
-export function detectNotes(paths: Array<string>) {
+export function detectNotes(
+	paths: Array<string>,
+	options: { root: string },
+): { [name: string]: Note } {
 	const notes: { [name: string]: Note } = {}
 
+	// for each path, extract note name, etc
 	for (const path of paths) {
 		const parts = Path.parse(path)
 
 		const name = parts.name.replace(/\.note$/, "")
-		const dir = parts.dir.length ? parts.dir.split(Path.SEPARATOR) : []
+		const rel = Path.relative(options.root, parts.dir)
+		const dir = rel.length ? rel.split(Path.SEPARATOR) : []
 
 		if (!(name in notes)) {
 			notes[name] = {
@@ -53,6 +57,7 @@ export function detectNotes(paths: Array<string>) {
 				files: {},
 			}
 		} else {
+			// don't allow notes of same name but different directories
 			assert(
 				notes[name].dir.join("/") == dir.join("/"),
 				`Note name '${name}' used by files in different directories: found ${path} and ${
@@ -65,6 +70,7 @@ export function detectNotes(paths: Array<string>) {
 		notes[name].files[ext] = path
 	}
 
+	// deduce note kinds from file extensions present
 	for (const name in notes) {
 		const extensions = Object.keys(notes[name].files)
 		const kind = detectNoteKind(new Set(extensions))
