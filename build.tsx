@@ -1,5 +1,6 @@
 import render from "preact-render-to-string"
-import { findNotes } from "./analyse.tsx"
+import { detectNotes, findNoteFiles } from "./analyse.tsx"
+import assert from "node:assert"
 import * as path from "@std/path"
 
 import { parseArgs } from "jsr:@std/cli/parse-args"
@@ -9,7 +10,8 @@ function renderToFile(content, path) {
 }
 
 async function build(srcdir: string, outdir: string) {
-	const notes = await findNotes(srcdir)
+	const files = await findNoteFiles(srcdir)
+	const notes = detectNotes(files)
 	const a = (
 		<div>
 			<h1>Basic site</h1>
@@ -22,6 +24,8 @@ async function build(srcdir: string, outdir: string) {
 
 if (import.meta.main) {
 	const flags = parseArgs(Deno.args)
+	assert.ok(flags.src, `--src flag not provided`)
+	assert.ok(flags.out, `--out flag not provided`)
 
 	build(flags.src, flags.out)
 }

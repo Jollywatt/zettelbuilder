@@ -1,8 +1,12 @@
 import { walk } from "@std/fs"
+import assert from "node:assert"
+import * as Path from "@std/path"
 
 interface Note {
 	name: string
-	kind: string
+	kind: string | null
+	// dir: string,
+	dir: Array<string>
 	files: { [ext: string]: string }
 }
 
@@ -21,27 +25,48 @@ function detectNoteKind(extensions: Set<string>): string | null {
 	return null
 }
 
-export async function findNotes(dir: string) {
-	const iter = walk(dir, {
+export async function findNoteFiles(dir: string) {
+	const dirnorm = dir.replace(/\/$/, "")
+	const iter = walk(dirnorm, {
 		includeDirs: false,
 		match: [/\.note\.\w+$/],
 	})
 
-	const filesByName: { [name: string]: { [ext: string]: string } } = {}
+	const entries = await Array.fromAsync(iter)
+	return entries.map((entry) => entry.path.slice(dirnorm.length + 1))
+}
 
-	for await (const file of iter) {
-		const m = file.name.match(/(.+)\.note\.(.+)/)
-		if (m) {
-			const [_, name, ext] = m
-			if (!(name in filesByName)) filesByName[name] = {}
-			filesByName[name][ext] = file.path
-		}
-	}
-
+export function detectNotes(paths: Array<string>) {
 	const notes: { [name: string]: Note } = {}
 
-	for (const name in filesByName) {
-		const extensions = Object.keys(filesByName[name])
+	for (const path of paths) {
+		const parts = Path.parse(path)
+
+		const name = parts.name.replace(/\.note$/, "")
+		const dir = parts.dir.length ? parts.dir.split(Path.SEPARATOR) : []
+
+		if (!(name in notes)) {
+			notes[name] = {
+				name,
+				dir,
+				kind: null,
+				files: {},
+			}
+		} else {
+			assert(
+				notes[name].dir.join("/") == dir.join("/"),
+				`Note name '${name}' used by files in different directories: found ${path} and ${
+					Object.values(notes[name].files)
+				}.`,
+			)
+		}
+
+		const ext = parts.ext.slice(1)
+		notes[name].files[ext] = path
+	}
+
+	for (const name in notes) {
+		const extensions = Object.keys(notes[name].files)
 		const kind = detectNoteKind(new Set(extensions))
 		if (kind === null) {
 			console.error(
@@ -51,11 +76,7 @@ export async function findNotes(dir: string) {
 			)
 			continue
 		}
-		notes[name] = {
-			name: name,
-			kind: kind,
-			files: filesByName[name],
-		}
+		notes[name].kind = kind
 	}
 
 	return notes

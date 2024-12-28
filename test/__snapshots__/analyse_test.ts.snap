@@ -1,3 +1,35 @@
 export const snapshot = {};
 
-snapshot[`find notes 1`] = `{}`;
+snapshot[`note detection 1`] = `
+{
+  a: {
+    dir: [
+      "maths",
+    ],
+    files: {
+      md: "maths/a.note.md",
+    },
+    kind: "Markdown",
+    name: "a",
+  },
+  b: {
+    dir: [
+      "maths",
+    ],
+    files: {
+      md: "maths/b.note.md",
+    },
+    kind: "Markdown",
+    name: "b",
+  },
+  c: {
+    dir: [],
+    files: {
+      pdf: "c.note.pdf",
+      typ: "c.note.typ",
+    },
+    kind: "Typst PDF",
+    name: "c",
+  },
+}
+`;

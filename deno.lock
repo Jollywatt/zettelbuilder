@@ -18,6 +18,7 @@
     "jsr:@std/path@^1.0.8": "1.0.8",
     "jsr:@std/streams@^1.0.8": "1.0.8",
     "jsr:@std/testing@^1.0.8": "1.0.8",
+    "npm:@types/node@*": "22.5.4",
     "npm:@types/react@^19.0.2": "19.0.2",
     "npm:preact-render-to-string@^6.5.12": "6.5.12_preact@10.25.3",
     "npm:preact@^10.25.3": "10.25.3",
@@ -96,6 +97,12 @@
     }
   },
   "npm": {
+    "@types/node@22.5.4": {
+      "integrity": "sha512-FDuKUJQm/ju9fT/SeX/6+gBzoPzlVCzfzmGkwKvRHQVxi4BntVbyIwf6a4Xn62mrvndLiml6z/UBXIdEVjQLXg==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
     "@types/react@19.0.2": {
       "integrity": "sha512-USU8ZI/xyKJwFTpjSVIrSeHBVAGagkHQKPNbxeWwql/vDmnTIBgx+TJnhFnj1NXgz8XfprU0egV2dROLGpsBEg==",
       "dependencies": [
@@ -116,6 +123,9 @@
     },
     "react@19.0.0": {
       "integrity": "sha512-V8AVnmPIICiWpGfm6GLzCR/W5FXLchHop40W4nXBmdlEceh16rCN8O8LNWm5bh5XUX91fh7KpA+W0TgMKmgTpQ=="
+    },
+    "undici-types@6.19.8": {
+      "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
     },
     "walk-it@5.0.1": {
       "integrity": "sha512-kci6AJedTdYC5AlJ2PMRSxwZzfe/0jzmmH1J/xcVWSglR8+fSOcYAzMiMiXc+BqX+PcxSg+UI0J3pcSIAQUptQ=="
