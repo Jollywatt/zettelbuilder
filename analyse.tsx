@@ -1,4 +1,4 @@
-import { walk } from "@std/fs"
+import { walkSync } from "@std/fs"
 import assert from "node:assert"
 import * as Path from "@std/path"
 
@@ -24,18 +24,17 @@ function detectNoteKind(extensions: Set<string>): string | null {
 	return null
 }
 
-export async function findNoteFiles(dir: string) {
+export function findNoteFiles(dir: string) {
 	const dirnorm = dir.replace(/\/$/, "")
-	const iter = walk(dirnorm, {
+	const iter = walkSync(dirnorm, {
 		includeDirs: false,
 		match: [/\.note\.\w+$/],
 	})
 
-	const entries = await Array.fromAsync(iter)
-	return entries.map((entry) => entry.path)
+	return Array.from(iter).map((entry) => entry.path)
 }
 
-export function detectNotes(
+export function notesFromFiles(
 	paths: Array<string>,
 	options: { root: string },
 ): { [name: string]: Note } {
@@ -86,4 +85,37 @@ export function detectNotes(
 	}
 
 	return notes
+}
+
+interface NoteFolder {
+	notes: { [name: string]: Note }
+	folders: { [name: string]: NoteFolder }
+}
+
+export function notesByFolder(notes: { [name: string]: Note }): NoteFolder {
+	const tree: NoteFolder = { notes: {}, folders: {} }
+
+	for (const name in notes) {
+		const note = notes[name]
+		let dir = tree
+		for (const c of note.dir) {
+			if (dir.folders[c] === undefined) {
+				dir.folders[c] = { notes: {}, folders: {} }
+				dir = dir.folders[c]
+			}
+		}
+		dir.notes[name] = note
+	}
+
+	return tree
+}
+
+export function analyseEverything(srcdir: string) {
+	const files = findNoteFiles(srcdir)
+	const notes = notesFromFiles(files, { root: srcdir })
+
+	return {
+		files,
+		notes,
+	}
 }
