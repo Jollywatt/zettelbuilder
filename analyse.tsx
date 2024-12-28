@@ -1,5 +1,10 @@
 import { walk } from "@std/fs"
-import render from "preact-render-to-string"
+
+interface Note {
+	name: string
+	kind: string
+	files: { [ext: string]: string }
+}
 
 const combos: { [kind: string]: Set<string> } = {
 	"Markdown": new Set(["md"]),
@@ -16,14 +21,8 @@ function detectNoteKind(extensions: Set<string>): string | null {
 	return null
 }
 
-interface Note {
-	name: string
-	kind: string
-	files: { [ext: string]: string }
-}
-
-export async function findNotes(src: string) {
-	const iter = walk(src, {
+export async function findNotes(dir: string) {
+	const iter = walk(dir, {
 		includeDirs: false,
 		match: [/\.note\.\w+$/],
 	})
@@ -60,12 +59,4 @@ export async function findNotes(src: string) {
 	}
 
 	return notes
-}
-
-function Main() {
-	return (
-		<div>
-			This is my site
-		</div>
-	)
 }

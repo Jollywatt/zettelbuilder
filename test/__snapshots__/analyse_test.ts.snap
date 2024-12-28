@@ -1,0 +1,3 @@
+export const snapshot = {};
+
+snapshot[`find notes 1`] = `{}`;
