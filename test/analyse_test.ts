@@ -1,12 +1,12 @@
 import { assertEquals } from "@std/assert"
 import { assertSnapshot } from "@std/testing/snapshot"
 
-import { detectNotes, findNoteFiles } from "../analyse.tsx"
+import { findNoteFiles, notesFromFiles } from "../analyse.tsx"
 
 Deno.test("note detection", async (shot) => {
 	await assertSnapshot(
 		shot,
-		detectNotes([
+		notesFromFiles([
 			`maths/a.note.md`,
 			`maths/b.note.md`,
 			`c.note.typ`,
@@ -18,7 +18,7 @@ Deno.test("note detection", async (shot) => {
 Deno.test("find notes", async function (shot) {
 	const src = "test/example-notes"
 	const paths = await findNoteFiles(src)
-	const notes = detectNotes(paths, { root: src })
+	const notes = notesFromFiles(paths, { root: src })
 
 	console.log(notes)
 })

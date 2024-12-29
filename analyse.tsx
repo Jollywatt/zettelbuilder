@@ -1,6 +1,7 @@
 import { walkSync } from "@std/fs"
 import assert from "node:assert"
 import * as Path from "@std/path"
+import { render } from "preact-render-to-string"
 
 export interface Note {
 	name: string
@@ -36,7 +37,7 @@ export function findNoteFiles(dir: string) {
 
 export function notesFromFiles(
 	paths: Array<string>,
-	options: { root: string },
+	options: { root: string } = { root: "" },
 ): { [name: string]: Note } {
 	const notes: { [name: string]: Note } = {}
 
@@ -87,7 +88,7 @@ export function notesFromFiles(
 	return notes
 }
 
-interface NoteFolder {
+export interface NoteFolder {
 	notes: { [name: string]: Note }
 	folders: { [name: string]: NoteFolder }
 }
@@ -110,12 +111,27 @@ export function notesByFolder(notes: { [name: string]: Note }): NoteFolder {
 	return tree
 }
 
-export function analyseEverything(srcdir: string) {
-	const files = findNoteFiles(srcdir)
-	const notes = notesFromFiles(files, { root: srcdir })
+interface Project {
+	notes: { [name: string]: Note }
+	tree: NoteFolder
+	renderPage: Function
+}
+
+export function setupProject(options: {
+	srcdir: string
+	sitedir: string
+}): Project {
+	const files = findNoteFiles(options.srcdir)
+	const notes = notesFromFiles(files, { root: options.srcdir })
+	const tree = notesByFolder(notes)
 
 	return {
-		files,
 		notes,
+		tree,
+		renderPage: (path: string, page) => {
+			const sitepath = Path.join(options.sitedir, path)
+			console.log(`Writing ${sitepath}`)
+			Deno.writeTextFileSync(sitepath, render(page))
+		},
 	}
 }
