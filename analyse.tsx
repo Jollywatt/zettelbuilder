@@ -112,6 +112,7 @@ export function notesByFolder(notes: { [name: string]: Note }): NoteFolder {
 }
 
 interface Project {
+	noteTypes: { [name: string]: Array<string> }
 	notes: { [name: string]: Note }
 	tree: NoteFolder
 	renderPage: Function
@@ -120,12 +121,14 @@ interface Project {
 export function setupProject(options: {
 	srcdir: string
 	sitedir: string
+	noteTypes: { [name: string]: Array<string> }
 }): Project {
 	const files = findNoteFiles(options.srcdir)
 	const notes = notesFromFiles(files, { root: options.srcdir })
 	const tree = notesByFolder(notes)
 
 	return {
+		noteTypes: options.noteTypes,
 		notes,
 		tree,
 		renderPage: (path: string, page) => {

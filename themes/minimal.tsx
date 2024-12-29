@@ -1,5 +1,25 @@
 import { Note, NoteFolder } from "../analyse.tsx"
 
+const base = (title, body) => (
+	<html>
+		<head>
+			<title>Minimal | {title}</title>
+		</head>
+		<body>{body}</body>
+	</html>
+)
+
+const indexPage = (project) =>
+	base(
+		`Index`,
+		<>
+			<h1>Index</h1>
+			<p>This is the minimal theme.</p>
+			<h2>Notes by folder</h2>
+			{toc(project.tree)}
+		</>,
+	)
+
 const tocEntry = (note: Note) => (
 	<li>
 		<a style={{ fontFamily: "monospace" }} href={`${note.name}.html`}>
@@ -25,16 +45,6 @@ function toc(node: NoteFolder) {
 	)
 }
 
-const indexPage = (project) =>
-	base(
-		`Index`,
-		<>
-			<h1>Index</h1>
-			<p>This is the minimal theme.</p>
-			{toc(project.tree)}
-		</>,
-	)
-
 const notePage = (note) =>
 	base(
 		note.name,
@@ -45,19 +55,10 @@ const notePage = (note) =>
 		</>,
 	)
 
-const base = (title, body) => (
-	<html>
-		<head>
-			<title>Minimal | {title}</title>
-		</head>
-		<body>{body}</body>
-	</html>
-)
-
 export default function build(project) {
 	project.renderPage("index.html", indexPage(project))
 
-	for (const note of Object.values(project.notes) as Array<Note>) {
-		project.renderPage(`${note.name}.html`, notePage(note))
+	for (const name in project.notes) {
+		project.renderPage(`${name}.html`, notePage(project.notes[name]))
 	}
 }
