@@ -1,5 +1,5 @@
 import { setupProject } from "../analyse.tsx"
-import Minimal from "../themes/minimal.tsx"
+import { build, renderMarkdown } from "../themes/minimal.tsx"
 
 const project = setupProject({
 	noteTypes: {
@@ -7,8 +7,11 @@ const project = setupProject({
 		"typst pdf": ["typ", "pdf"],
 		"plain text": ["txt"],
 	},
+	noteRenderers: {
+		"markdown": renderMarkdown,
+	},
 	srcdir: "test/example-notes",
 	sitedir: "build/",
 })
 
-Minimal(project)
+build(project)

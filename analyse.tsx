@@ -111,29 +111,37 @@ export function notesByFolder(notes: { [name: string]: Note }): NoteFolder {
 
 interface Project {
 	noteTypes: NoteTypes
+	noteRenderers: { [label: string]: Function }
 	notes: { [name: string]: Note }
 	tree: NoteFolder
 	renderPage: Function
 }
 
-export function setupProject(options: {
+export function setupProject({
+	srcdir,
+	sitedir = "build/",
+	noteTypes,
+	noteRenderers,
+}: {
 	srcdir: string
 	sitedir: string
 	noteTypes: NoteTypes
+	noteRenderers: { [label: string]: Function }
 }): Project {
-	const files = findNoteFiles(options.srcdir)
+	const files = findNoteFiles(srcdir)
 	const notes = notesFromFiles(files, {
-		noteTypes: options.noteTypes,
-		root: options.srcdir,
+		noteTypes: noteTypes,
+		root: srcdir,
 	})
 	const tree = notesByFolder(notes)
 
 	return {
-		noteTypes: options.noteTypes,
+		noteTypes,
 		notes,
 		tree,
+		noteRenderers,
 		renderPage: (path: string, page) => {
-			const sitepath = Path.join(options.sitedir, path)
+			const sitepath = Path.join(sitedir, path)
 			console.log(`Writing ${sitepath}`)
 			Deno.writeTextFileSync(sitepath, render(page))
 		},

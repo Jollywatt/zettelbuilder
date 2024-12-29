@@ -55,10 +55,34 @@ const notePage = (note) =>
 		</>,
 	)
 
-export default function build(project) {
+export function renderMarkdown(note) {
+	return base(
+		note.name,
+		<>
+			<h1>{note.name}</h1>
+			This is a markdown note.
+			<pre>{note.files.md}</pre>
+		</>,
+	)
+}
+
+const defaultRenderer = (note) =>
+	base(
+		note.name,
+		<>
+			<h1>{note.name}</h1>
+			<h2>{note.kind}</h2>
+			No renderer is defined for the note type <code>{note.kind}</code>.
+			<pre>{JSON.stringify(note, null, 2)}</pre>
+		</>,
+	)
+
+export function build(project) {
 	project.renderPage("index.html", indexPage(project))
 
 	for (const name in project.notes) {
-		project.renderPage(`${name}.html`, notePage(project.notes[name]))
+		const note = project.notes[name]
+		const renderer = project.noteRenderers[note.kind] ?? defaultRenderer
+		project.renderPage(`${name}.html`, renderer(note))
 	}
 }
