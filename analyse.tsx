@@ -10,15 +10,13 @@ export interface Note {
 	files: { [ext: string]: string }
 }
 
-const combos: { [kind: string]: Set<string> } = {
-	"Markdown": new Set(["md"]),
-	"plain text": new Set(["txt"]),
-	"Typst PDF": new Set(["typ", "pdf"]),
+interface NoteTypes {
+	[label: string]: Array<string>
 }
 
-function detectNoteKind(extensions: Set<string>): string | null {
-	for (const [kind, exts] of Object.entries(combos)) {
-		if (extensions.symmetricDifference(exts).size == 0) {
+function detectNoteKind(nt: NoteTypes, extensions: Set<string>): string | null {
+	for (const [kind, exts] of Object.entries(nt)) {
+		if (extensions.symmetricDifference(new Set(exts)).size == 0) {
 			return kind
 		}
 	}
@@ -37,7 +35,7 @@ export function findNoteFiles(dir: string) {
 
 export function notesFromFiles(
 	paths: Array<string>,
-	options: { root: string } = { root: "" },
+	{ noteTypes, root = "" }: { noteTypes: NoteTypes; root?: string },
 ): { [name: string]: Note } {
 	const notes: { [name: string]: Note } = {}
 
@@ -46,7 +44,7 @@ export function notesFromFiles(
 		const parts = Path.parse(path)
 
 		const name = parts.name.replace(/\.note$/, "")
-		const rel = Path.relative(options.root, parts.dir)
+		const rel = Path.relative(root, parts.dir)
 		const dir = rel.length ? rel.split(Path.SEPARATOR) : []
 
 		if (!(name in notes)) {
@@ -73,7 +71,7 @@ export function notesFromFiles(
 	// deduce note kinds from file extensions present
 	for (const name in notes) {
 		const extensions = Object.keys(notes[name].files)
-		const kind = detectNoteKind(new Set(extensions))
+		const kind = detectNoteKind(noteTypes, new Set(extensions))
 		if (kind === null) {
 			console.error(
 				`Couldn't determine kind of note "${name}" with extensions: ${
@@ -112,7 +110,7 @@ export function notesByFolder(notes: { [name: string]: Note }): NoteFolder {
 }
 
 interface Project {
-	noteTypes: { [name: string]: Array<string> }
+	noteTypes: NoteTypes
 	notes: { [name: string]: Note }
 	tree: NoteFolder
 	renderPage: Function
@@ -121,10 +119,13 @@ interface Project {
 export function setupProject(options: {
 	srcdir: string
 	sitedir: string
-	noteTypes: { [name: string]: Array<string> }
+	noteTypes: NoteTypes
 }): Project {
 	const files = findNoteFiles(options.srcdir)
-	const notes = notesFromFiles(files, { root: options.srcdir })
+	const notes = notesFromFiles(files, {
+		noteTypes: options.noteTypes,
+		root: options.srcdir,
+	})
 	const tree = notesByFolder(notes)
 
 	return {

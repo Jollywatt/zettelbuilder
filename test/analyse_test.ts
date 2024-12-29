@@ -11,14 +11,11 @@ Deno.test("note detection", async (shot) => {
 			`maths/b.note.md`,
 			`c.note.typ`,
 			`c.note.pdf`,
-		]),
+		], {
+			noteTypes: {
+				"Markdown": ["md"],
+				"Typst PDF": ["typ", "pdf"],
+			},
+		}),
 	)
-})
-
-Deno.test("find notes", async function (shot) {
-	const src = "test/example-notes"
-	const paths = await findNoteFiles(src)
-	const notes = notesFromFiles(paths, { root: src })
-
-	console.log(notes)
 })
