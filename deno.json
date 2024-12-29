@@ -18,10 +18,10 @@
 		"jsx": "precompile",
 		"jsxImportSource": "preact",
 		"jsxImportSourceTypes": "@types/react",
-		"noImplicitAny": false,
+		"noImplicitAny": false
 	},
 	"fmt": {
 		"useTabs": true,
-		"semiColons": false,
+		"semiColons": false
 	}
 }
