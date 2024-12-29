@@ -25,20 +25,33 @@ function toc(node: NoteFolder) {
 	)
 }
 
-const indexPage = (project) => (
-	<>
-		<h1>Index</h1>
-		<p>This is the minimal theme.</p>
-		{toc(project.tree)}
-	</>
-)
+const indexPage = (project) =>
+	base(
+		`Index`,
+		<>
+			<h1>Index</h1>
+			<p>This is the minimal theme.</p>
+			{toc(project.tree)}
+		</>,
+	)
 
-const notePage = (note) => (
-	<>
-		<h1>{note.name}</h1>
-		<h2>{note.kind}</h2>
-		<pre>{JSON.stringify(note, null, 2)}</pre>
-	</>
+const notePage = (note) =>
+	base(
+		note.name,
+		<>
+			<h1>{note.name}</h1>
+			<h2>{note.kind}</h2>
+			<pre>{JSON.stringify(note, null, 2)}</pre>
+		</>,
+	)
+
+const base = (title, body) => (
+	<html>
+		<head>
+			<title>Minimal | {title}</title>
+		</head>
+		<body>{body}</body>
+	</html>
 )
 
 export default function build(project) {
