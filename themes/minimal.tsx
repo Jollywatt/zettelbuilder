@@ -3,7 +3,11 @@ import { CSS, render as renderMarkdown } from "@deno/gfm"
 
 const base = ({ head, body }) => (
 	<html>
-		<head>{head}</head>
+		<head>
+			<meta charset="UTF-8" />
+			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+			{head}
+		</head>
 		<body>{body}</body>
 	</html>
 )
@@ -46,45 +50,72 @@ function toc(node: NoteFolder) {
 	)
 }
 
-const notePage = (note) =>
-	base({
-		head: <title>{note.name}</title>,
-		body: (
-			<main>
-				<h1>{note.name}</h1>
-				<h2>{note.kind}</h2>
-				<pre>{JSON.stringify(note, null, 2)}</pre>
-			</main>
-		),
-	})
-
-export async function markdownNote(note) {
-	const md = await Deno.readTextFile(note.files.md)
-	const html = renderMarkdown(md)
-	return base({
-		head: <title>{note.name}</title>,
-		body: <main dangerouslySetInnerHTML={{ __html: html }}></main>,
-	})
-}
+const header = (note) => (
+	<p>
+		<b>
+			<a href="/">Index</a> / <span>{note.name}</span>
+		</b>
+	</p>
+)
 
 const defaultRenderer = (note) =>
 	base({
 		head: <title>{note.name}</title>,
 		body: (
 			<main>
-				<h1>{note.name}</h1>
-				No renderer is defined for notes of type <code>{note.kind}</code>.
+				{header(note)}
+				No renderer is defined for note type <code>{note.kind}</code>.
 				<pre>{JSON.stringify(note, null, 2)}</pre>
 			</main>
 		),
 	})
+
+const noteRenderers: { [noteType: string]: Function } = {}
+
+noteRenderers["markdown"] = async function (note) {
+	const md = await Deno.readTextFile(note.files.md)
+	const html = renderMarkdown(md)
+	return base({
+		head: (
+			<>
+				<title>{note.name}</title>
+				<style>{CSS}</style>
+			</>
+		),
+		body: (
+			<>
+				{header(note)}
+				<main
+					dangerouslySetInnerHTML={{ __html: html }}
+					className="markdown-body"
+				>
+				</main>
+			</>
+		),
+	})
+}
+
+noteRenderers["plain text"] = async function (note) {
+	const txt = await Deno.readTextFile(note.files.txt)
+	return base({
+		head: <title>{note.name}</title>,
+		body: (
+			<>
+				{header(note)}
+				<main>
+					<pre>{txt}</pre>
+				</main>
+			</>
+		),
+	})
+}
 
 export async function build(project) {
 	project.renderPage("index.html", indexPage(project))
 
 	for (const name in project.notes) {
 		const note = project.notes[name]
-		const renderer = project.noteRenderers[note.kind] ?? defaultRenderer
+		const renderer = noteRenderers[note.kind] ?? defaultRenderer
 		const html = await renderer(note)
 		project.renderPage(`${name}.html`, html)
 	}
