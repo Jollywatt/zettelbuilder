@@ -19,5 +19,9 @@
 		"jsxImportSource": "preact",
 		"jsxImportSourceTypes": "@types/react",
 		"noImplicitAny": false
+	},
+	"fmt": {
+		"useTabs": true,
+		"semiColons": false,
 	}
 }
