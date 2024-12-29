@@ -1,24 +1,25 @@
 import { Note, NoteFolder } from "../analyse.tsx"
+import { CSS, render as renderMarkdown } from "@deno/gfm"
 
-const base = (title, body) => (
+const base = ({ head, body }) => (
 	<html>
-		<head>
-			<title>Minimal | {title}</title>
-		</head>
+		<head>{head}</head>
 		<body>{body}</body>
 	</html>
 )
 
 const indexPage = (project) =>
-	base(
-		`Index`,
-		<>
-			<h1>Index</h1>
-			<p>This is the minimal theme.</p>
-			<h2>Notes by folder</h2>
-			{toc(project.tree)}
-		</>,
-	)
+	base({
+		head: <title>Index</title>,
+		body: (
+			<main>
+				<h1>Index</h1>
+				<p>This is the minimal theme.</p>
+				<h2>Notes by folder</h2>
+				{toc(project.tree)}
+			</main>
+		),
+	})
 
 const tocEntry = (note: Note) => (
 	<li>
@@ -46,43 +47,45 @@ function toc(node: NoteFolder) {
 }
 
 const notePage = (note) =>
-	base(
-		note.name,
-		<>
-			<h1>{note.name}</h1>
-			<h2>{note.kind}</h2>
-			<pre>{JSON.stringify(note, null, 2)}</pre>
-		</>,
-	)
+	base({
+		head: <title>{note.name}</title>,
+		body: (
+			<main>
+				<h1>{note.name}</h1>
+				<h2>{note.kind}</h2>
+				<pre>{JSON.stringify(note, null, 2)}</pre>
+			</main>
+		),
+	})
 
-export function renderMarkdown(note) {
-	return base(
-		note.name,
-		<>
-			<h1>{note.name}</h1>
-			This is a markdown note.
-			<pre>{note.files.md}</pre>
-		</>,
-	)
+export async function markdownNote(note) {
+	const md = await Deno.readTextFile(note.files.md)
+	const html = renderMarkdown(md)
+	return base({
+		head: <title>{note.name}</title>,
+		body: <main dangerouslySetInnerHTML={{ __html: html }}></main>,
+	})
 }
 
 const defaultRenderer = (note) =>
-	base(
-		note.name,
-		<>
-			<h1>{note.name}</h1>
-			<h2>{note.kind}</h2>
-			No renderer is defined for the note type <code>{note.kind}</code>.
-			<pre>{JSON.stringify(note, null, 2)}</pre>
-		</>,
-	)
+	base({
+		head: <title>{note.name}</title>,
+		body: (
+			<main>
+				<h1>{note.name}</h1>
+				No renderer is defined for notes of type <code>{note.kind}</code>.
+				<pre>{JSON.stringify(note, null, 2)}</pre>
+			</main>
+		),
+	})
 
-export function build(project) {
+export async function build(project) {
 	project.renderPage("index.html", indexPage(project))
 
 	for (const name in project.notes) {
 		const note = project.notes[name]
 		const renderer = project.noteRenderers[note.kind] ?? defaultRenderer
-		project.renderPage(`${name}.html`, renderer(note))
+		const html = await renderer(note)
+		project.renderPage(`${name}.html`, html)
 	}
 }

@@ -1,5 +1,5 @@
 import { setupProject } from "../analyse.tsx"
-import { build, renderMarkdown } from "../themes/minimal.tsx"
+import { build, markdownNote } from "../themes/minimal.tsx"
 
 const project = setupProject({
 	noteTypes: {
@@ -8,7 +8,7 @@ const project = setupProject({
 		"plain text": ["txt"],
 	},
 	noteRenderers: {
-		"markdown": renderMarkdown,
+		"markdown": markdownNote,
 	},
 	srcdir: "test/example-notes",
 	sitedir: "build/",
