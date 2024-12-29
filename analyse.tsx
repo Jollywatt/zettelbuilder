@@ -5,7 +5,7 @@ import { render } from "preact-render-to-string"
 
 export interface Note {
 	name: string
-	kind: string | null
+	type: string | null
 	dir: Array<string>
 	files: { [ext: string]: string }
 }
@@ -15,9 +15,9 @@ interface NoteTypes {
 }
 
 function detectNoteKind(nt: NoteTypes, extensions: Set<string>): string | null {
-	for (const [kind, exts] of Object.entries(nt)) {
+	for (const [type, exts] of Object.entries(nt)) {
 		if (extensions.symmetricDifference(new Set(exts)).size == 0) {
-			return kind
+			return type
 		}
 	}
 	return null
@@ -51,7 +51,7 @@ export function notesFromFiles(
 			notes[name] = {
 				name,
 				dir,
-				kind: null,
+				type: null,
 				files: {},
 			}
 		} else {
@@ -68,19 +68,19 @@ export function notesFromFiles(
 		notes[name].files[ext] = path
 	}
 
-	// deduce note kinds from file extensions present
+	// deduce note types from file extensions present
 	for (const name in notes) {
 		const extensions = Object.keys(notes[name].files)
-		const kind = detectNoteKind(noteTypes, new Set(extensions))
-		if (kind === null) {
+		const type = detectNoteKind(noteTypes, new Set(extensions))
+		if (type === null) {
 			console.error(
-				`Couldn't determine kind of note "${name}" with extensions: ${
+				`Couldn't determine type of note "${name}" with extensions: ${
 					extensions.join(", ")
 				}`,
 			)
 			continue
 		}
-		notes[name].kind = kind
+		notes[name].type = type
 	}
 
 	return notes

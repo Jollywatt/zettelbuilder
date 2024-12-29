@@ -9,8 +9,8 @@ snapshot[`note detection 1`] = `
     files: {
       md: "maths/a.note.md",
     },
-    kind: "Markdown",
     name: "a",
+    type: "Markdown",
   },
   b: {
     dir: [
@@ -19,8 +19,8 @@ snapshot[`note detection 1`] = `
     files: {
       md: "maths/b.note.md",
     },
-    kind: "Markdown",
     name: "b",
+    type: "Markdown",
   },
   c: {
     dir: [],
@@ -28,8 +28,8 @@ snapshot[`note detection 1`] = `
       pdf: "c.note.pdf",
       typ: "c.note.typ",
     },
-    kind: "Typst PDF",
     name: "c",
+    type: "Typst PDF",
   },
 }
 `;

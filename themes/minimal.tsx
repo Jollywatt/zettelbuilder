@@ -4,7 +4,7 @@ import { CSS, render as renderMarkdown } from "@deno/gfm"
 const base = ({ head, body }) => (
 	<html>
 		<head>
-			<meta charset="UTF-8" />
+			<meta charSet="UTF-8" />
 			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 			{head}
 		</head>
@@ -30,7 +30,7 @@ const tocEntry = (note: Note) => (
 		<a style={{ fontFamily: "monospace" }} href={`${note.name}.html`}>
 			[{note.name}]
 		</a>
-		<span style={{ fontSize: "0.8em" }}>{note.kind}</span>
+		<span style={{ fontSize: "0.8em" }}>{note.type}</span>
 	</li>
 )
 
@@ -64,7 +64,7 @@ const defaultRenderer = (note) =>
 		body: (
 			<main>
 				{header(note)}
-				No renderer is defined for note type <code>{note.kind}</code>.
+				No renderer is defined for note type <code>{note.type}</code>.
 				<pre>{JSON.stringify(note, null, 2)}</pre>
 			</main>
 		),
@@ -115,7 +115,7 @@ export async function build(project) {
 
 	for (const name in project.notes) {
 		const note = project.notes[name]
-		const renderer = noteRenderers[note.kind] ?? defaultRenderer
+		const renderer = noteRenderers[note.type] ?? defaultRenderer
 		const html = await renderer(note)
 		project.renderPage(`${name}.html`, html)
 	}
