@@ -161,12 +161,13 @@ export class Project {
 
 	renderPage(path: string, page) {
 		const sitepath = Path.join(this.sitedir, path)
-		console.log(`Writing ${sitepath}`)
-		Deno.writeTextFileSync(sitepath, render(page))
+		console.log(`%cWriting%c ${sitepath}`, "font-weight: bold", "")
+		const html = typeof page === "string" ? page : render(page)
+		Deno.writeTextFileSync(sitepath, html)
 	}
 
 	build() {
-		console.log(`Building site at ${this.sitedir}`)
+		console.log(`%cBuilding%c site at ${this.sitedir}`, "font-weight: bold", "")
 		// ensure site directory exists and is empty
 		Deno.mkdirSync(this.sitedir, { recursive: true })
 		Deno.removeSync(this.sitedir, { recursive: true })
@@ -183,7 +184,10 @@ export class Project {
 		const bs = BrowserSync()
 
 		if (autoreload) {
-			bs.watch(Path.join(this.sitedir, "**/*.html")).on("change", bs.reload)
+			bs.watch(Path.join(this.sitedir, "**/*.{html,css}")).on(
+				"change",
+				bs.reload,
+			)
 		}
 
 		bs.watch(Path.join(this.srcdir, "**/*")).on("change", (path) => {
