@@ -2,6 +2,7 @@ import { walkSync } from "@std/fs"
 import assert from "node:assert"
 import * as Path from "@std/path"
 import { render } from "preact-render-to-string"
+import { create as BrowserSync } from "browser-sync"
 
 export interface Note {
 	name: string
@@ -100,8 +101,8 @@ export function notesByFolder(notes: { [name: string]: Note }): NoteFolder {
 		for (const c of note.dir) {
 			if (dir.folders[c] === undefined) {
 				dir.folders[c] = { notes: {}, folders: {} }
-				dir = dir.folders[c]
 			}
+			dir = dir.folders[c]
 		}
 		dir.notes[name] = note
 	}
@@ -109,37 +110,99 @@ export function notesByFolder(notes: { [name: string]: Note }): NoteFolder {
 	return tree
 }
 
-interface Project {
-	noteTypes: NoteTypes
+export interface ProjectData {
+	files: Array<string>
 	notes: { [name: string]: Note }
 	tree: NoteFolder
-	renderPage: Function
 }
 
-export function setupProject({
-	srcdir,
-	sitedir = "build/",
-	noteTypes,
-}: {
+export class Project {
 	srcdir: string
 	sitedir: string
 	noteTypes: NoteTypes
-}): Project {
-	const files = findNoteFiles(srcdir)
-	const notes = notesFromFiles(files, {
-		noteTypes: noteTypes,
-		root: srcdir,
-	})
-	const tree = notesByFolder(notes)
+	builder: Function
 
-	return {
+	analysis: ProjectData | null
+
+	constructor({
+		srcdir,
+		sitedir,
 		noteTypes,
-		notes,
-		tree,
-		renderPage: (path: string, page) => {
-			const sitepath = Path.join(sitedir, path)
-			console.log(`Writing ${sitepath}`)
-			Deno.writeTextFileSync(sitepath, render(page))
+		builder,
+	}: {
+		srcdir: string
+		sitedir: string
+		noteTypes: NoteTypes
+		builder: Function
+	}) {
+		this.srcdir = srcdir
+		this.sitedir = sitedir
+		this.noteTypes = noteTypes
+		this.builder = builder
+		this.analysis = null
+	}
+
+	analyse() {
+		const files = findNoteFiles(this.srcdir)
+		const notes = notesFromFiles(files, {
+			noteTypes: this.noteTypes,
+			root: this.srcdir,
+		})
+		const tree = notesByFolder(notes)
+
+		this.analysis = {
+			files,
+			notes,
+			tree,
+		}
+
+		return this.analysis
+	}
+
+	renderPage(path: string, page) {
+		const sitepath = Path.join(this.sitedir, path)
+		console.log(`Writing ${sitepath}`)
+		Deno.writeTextFileSync(sitepath, render(page))
+	}
+
+	build() {
+		console.log(`Building site at ${this.sitedir}`)
+		// ensure site directory exists and is empty
+		Deno.mkdirSync(this.sitedir, { recursive: true })
+		Deno.removeSync(this.sitedir, { recursive: true })
+		Deno.mkdirSync(this.sitedir)
+		this.builder(this)
+	}
+
+	serve(
+		{ autoreload = true, autobuild = true } = {
+			autoreload: Boolean,
+			autobuild: Boolean,
 		},
+	) {
+		const bs = BrowserSync()
+
+		if (autoreload) {
+			bs.watch(Path.join(this.sitedir, "**/*.html")).on("change", bs.reload)
+		}
+
+		bs.watch(Path.join(this.srcdir, "**/*")).on("change", (path) => {
+			console.log(`Detected change: ${path}`)
+			this.build()
+		})
+
+		bs.watch(Deno.mainModule, (path) => {
+			console.log(`Detected change in zettelsite package: ${path}`)
+			this.build()
+		})
+
+		bs.init({
+			server: this.sitedir,
+			serveStatic: [this.sitedir],
+			serveStaticOptions: {
+				extensions: ["html"], // pretty urls
+			},
+			open: false,
+		})
 	}
 }

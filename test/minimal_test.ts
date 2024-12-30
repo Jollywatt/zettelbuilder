@@ -1,7 +1,7 @@
-import { setupProject } from "../analyse.tsx"
-import { build } from "../themes/minimal.tsx"
+import { Project } from "../src/analyse.tsx"
+import { build } from "../src/themes/minimal.tsx"
 
-const project = setupProject({
+const project = new Project({
 	noteTypes: {
 		"markdown": ["md"],
 		"typst pdf": ["typ", "pdf"],
@@ -9,6 +9,7 @@ const project = setupProject({
 	},
 	srcdir: "test/example-notes",
 	sitedir: "build/",
+	builder: build,
 })
 
-build(project)
+project.build()

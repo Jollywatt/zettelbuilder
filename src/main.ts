@@ -1,7 +1,2 @@
-import {
-	setupProject	
-} from "./analyse.tsx"
-
-import * as Minimal from "./themes/minimal.tsx"
-
-export { setupProject, Minimal }
+export { type Note, type NoteFolder, Project } from "./analyse.tsx"
+export * as Minimal from "./themes/minimal.tsx"
