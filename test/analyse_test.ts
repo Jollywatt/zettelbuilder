@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert"
 import { assertSnapshot } from "@std/testing/snapshot"
 
-import { findNoteFiles, notesFromFiles } from "../analyse.tsx"
+import { findNoteFiles, notesFromFiles } from "../src/analyse.tsx"
 
 Deno.test("note detection", async (shot) => {
 	await assertSnapshot(

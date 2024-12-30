@@ -1,4 +1,4 @@
-import { Note, NoteFolder } from "../analyse.tsx"
+import { Note, NoteFolder, Project } from "../analyse.tsx"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
 
 const base = ({ head, body }) => (
@@ -12,7 +12,9 @@ const base = ({ head, body }) => (
 	</html>
 )
 
-const indexPage = (project) =>
+const json = (obj) => <pre>{JSON.stringify(obj, null, 2)}</pre>
+
+const indexPage = (tree: NoteFolder) =>
 	base({
 		head: <title>Index</title>,
 		body: (
@@ -20,7 +22,7 @@ const indexPage = (project) =>
 				<h1>Index</h1>
 				<p>This is the minimal theme.</p>
 				<h2>Notes by folder</h2>
-				{toc(project.tree)}
+				{toc(tree)}
 			</main>
 		),
 	})
@@ -115,12 +117,13 @@ noteRenderers["plain text"] = async function (note) {
 	})
 }
 
-export async function build(project) {
-	project.renderPage("index.html", indexPage(project))
+export async function build(project: Project) {
+	const { notes, tree } = project.analyse()
+	project.renderPage("index.html", indexPage(tree))
 
-	for (const name in project.notes) {
-		const note = project.notes[name]
-		const renderer = noteRenderers[note.type] ?? defaultRenderer
+	for (const name in notes) {
+		const note: Note = notes[name]
+		const renderer = noteRenderers[note.type ?? "unknown"] ?? defaultRenderer
 		const html = await renderer(note)
 		project.renderPage(`${name}.html`, html)
 	}

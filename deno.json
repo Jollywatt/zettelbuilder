@@ -1,6 +1,6 @@
 {
 	"tasks": {
-		"test": "deno test --watch --allow-read --allow-write=build/",
+		"test": "deno test --watch --allow-read --allow-write=build/ --allow-env",
 		"serve": "deno run -A npm:browser-sync start --server build/ --watch"
 	},
 	"imports": {
