@@ -48,8 +48,8 @@ const tocEntry = (note: Note) => (
 	<li>
 		<a style={{ fontFamily: "monospace" }} href={`${note.name}.html`}>
 			[{note.name}]
-		</a>
-		<span style={{ fontSize: "0.8em" }}>{note.type}</span>
+		</a>{" "}
+		<span style={{ fontSize: "0.8em" }}>{note.description}</span>
 	</li>
 )
 
@@ -79,44 +79,98 @@ function NoteHeader({ note }) {
 	)
 }
 
-const defaultRenderer = (note) => (
-	<NotePage note={note}>
-		No renderer is defined for note type <code>{note.type}</code>.
-		<pre>{JSON.stringify(note, null, 2)}</pre>
-	</NotePage>
-)
+export class MarkdownNote extends Note {
+	static override description = "markdown"
+	static override extensionCombo = ["md"]
 
-const noteRenderers: { [noteType: string]: Function } = {}
-
-noteRenderers["markdown"] = (note) => {
-	let md = note.files.md.content
-		.replace(/\(@([-\w]+)\)/g, (_, name) => `(${name}.html)`)
-		.replace(/@([-\w]+)/g, (handle, name) => `[${handle}](${name}.html)`)
-	const html = renderMarkdown(md)
-	return (
-		<NotePage note={note} head={<style>{CSS}</style>}>
-			<div
-				dangerouslySetInnerHTML={{ __html: html }}
-				className="markdown-body"
-			/>
-		</NotePage>
-	)
+	override render() {
+		let md = this.files.md.content
+			.replace(/\(@([-\w]+)\)/g, (_, name) => `(${name}.html)`)
+			.replace(/@([-\w]+)/g, (handle, name) => `[${handle}](${name}.html)`)
+		const html = renderMarkdown(md)
+		return (
+			<NotePage note={this} head={<style>{CSS}</style>}>
+				<div
+					dangerouslySetInnerHTML={{ __html: html }}
+					className="markdown-body"
+				/>
+			</NotePage>
+		)
+	}
 }
 
-noteRenderers["plain text"] = (note) => (
-	<NotePage note={note}>
-		<pre>{note.files.txt.content}</pre>
-	</NotePage>
-)
+export class PlainTextNote extends Note {
+	static override extensionCombo = ["txt"]
+	static override description = "plain text"
+
+	override render() {
+		return (
+			<NotePage note={this}>
+				<pre>{this.files.txt.content}</pre>
+			</NotePage>
+		)
+	}
+}
+
+export class ExternalURLNote extends Note {
+	static override extensionCombo = ["url"]
+
+	#url: URL | null = null
+
+	override get description() {
+		return `${this.url.host} link`
+	}
+
+	get url(): URL {
+		if (this.#url === null) {
+			const match = this.files.url.content.match(/https?:.*/)
+			if (match === null) {
+				throw new Error(`Couldn't parse URL in ${this.files.url.path}.`)
+			}
+			this.#url = new URL(match[0])
+		}
+		return this.#url
+	}
+
+	override render() {
+		return (
+			<NotePage note={this}>
+				<iframe className="page" src={this.url.href}></iframe>
+			</NotePage>
+		)
+	}
+}
+
+export class TypstNote extends Note {
+	static override extensionCombo = ["typ", "pdf"]
+	static override description = "typst pdf"
+
+	extractRefs() {
+		const refs: Array<string> = []
+		for (const m in this.files.typ.content.matchAll(/@([-\w]+)/)) {
+			refs.push(m[1])
+		}
+		return refs
+	}
+
+	override render() {
+		const pdfFileName = `${this.name}.pdf`
+		Deno.copyFile(this.files.pdf.path, `${this.sitedir}/${pdfFileName}`)
+		return (
+			<NotePage note={this}>
+				<object data={pdfFileName} type="application/pdf" />
+			</NotePage>
+		)
+	}
+}
 
 export async function build(project: Project) {
 	const { notes, tree } = project.analyse()
 	project.renderPage("index.html", indexPage(tree))
 
 	for (const name in notes) {
-		const note: Note = notes[name]
-		const renderer = noteRenderers[note.type ?? "unknown"] ?? defaultRenderer
-		const html = await renderer(note)
+		const note = notes[name]
+		const html = await note.render()
 		project.renderPage(`${name}.html`, html)
 	}
 }
