@@ -16,6 +16,18 @@ function Base({ head, children }) {
 	)
 }
 
+function NoteLink({ note }: { note: Note }) {
+	const sitepath = `${note.name}.html`
+	return (
+		<span>
+			<a href={sitepath}>
+				<code>[{note.name}]</code>
+			</a>{" "}
+			{note.description}
+		</span>
+	)
+}
+
 function NotePage({ note, children, head = <></> }) {
 	head = (
 		<>
@@ -26,7 +38,39 @@ function NotePage({ note, children, head = <></> }) {
 	return (
 		<Base head={head}>
 			<NoteHeader note={note} />
+			<h1>
+				Note <code>[{note.name}]</code>
+			</h1>
 			<main>{children}</main>
+			<h2>Cross references</h2>
+			{note.refs.outgoing.length
+				? (
+					<>
+						Outgoing:
+						<ul>
+							{note.refs.outgoing.map((note) => (
+								<li>
+									<NoteLink note={note} />
+								</li>
+							))}
+						</ul>
+					</>
+				)
+				: null}
+			{note.refs.incoming.length
+				? (
+					<>
+						Incoming:
+						<ul>
+							{note.refs.incoming.map((note) => (
+								<li>
+									<NoteLink note={note} />
+								</li>
+							))}
+						</ul>
+					</>
+				)
+				: null}
 		</Base>
 	)
 }
@@ -35,7 +79,7 @@ function indexPage(tree: NoteFolder) {
 	return (
 		<Base head={<title>Index</title>}>
 			<main>
-				<h1>Index</h1>
+				<h1>📑 Index</h1>
 				<p>This is the minimal theme.</p>
 				<h2>Notes by folder</h2>
 				{toc(tree)}
@@ -46,10 +90,14 @@ function indexPage(tree: NoteFolder) {
 
 const tocEntry = (note: Note) => (
 	<li>
-		<a style={{ fontFamily: "monospace" }} href={`${note.name}.html`}>
-			[{note.name}]
+		<a href={`${note.name}.html`}>
+			<code>[{note.name}]</code>
 		</a>{" "}
-		<span style={{ fontSize: "0.8em" }}>{note.description}</span>
+		<span>{note.description}</span>
+		{note.refs.outgoing.length ? ", links to " : ""}
+		{note.refs.outgoing.map((note) => <code>[{note.name}]</code>)}
+		{note.refs.incoming.length ? ", linked from " : ""}
+		{note.refs.incoming.map((note) => <code>[{note.name}]</code>)}
 	</li>
 )
 
@@ -61,7 +109,7 @@ function toc(node: NoteFolder) {
 			{notenames.map((name) => tocEntry(node.notes[name]))}
 			{foldernames.map((name) => (
 				<li>
-					{name}
+					<strong>{name}</strong>
 					{toc(node.folders[name])}
 				</li>
 			))}
@@ -82,6 +130,12 @@ function NoteHeader({ note }) {
 export class MarkdownNote extends Note {
 	static override description = "markdown"
 	static override extensionCombo = ["md"]
+
+	override extractRefs() {
+		return new Set(
+			this.files.md.content.matchAll(/@([-\w]+)/g).map((match) => match[1]),
+		)
+	}
 
 	override render() {
 		let md = this.files.md.content
@@ -134,6 +188,9 @@ export class ExternalURLNote extends Note {
 	override render() {
 		return (
 			<NotePage note={this}>
+				<p>
+					Link to <code>{this.url.href}</code>.
+				</p>
 				<iframe className="page" src={this.url.href}></iframe>
 			</NotePage>
 		)
@@ -143,14 +200,6 @@ export class ExternalURLNote extends Note {
 export class TypstNote extends Note {
 	static override extensionCombo = ["typ", "pdf"]
 	static override description = "typst pdf"
-
-	extractRefs() {
-		const refs: Array<string> = []
-		for (const m in this.files.typ.content.matchAll(/@([-\w]+)/)) {
-			refs.push(m[1])
-		}
-		return refs
-	}
 
 	override render() {
 		const pdfFileName = `${this.name}.pdf`
