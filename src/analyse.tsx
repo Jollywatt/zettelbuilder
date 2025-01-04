@@ -27,7 +27,7 @@ class LazyFile {
 	}
 }
 
-export interface NoteInfo {
+interface NoteInfo {
 	name: string
 	type: typeof Note
 	dir: Array<string>
@@ -61,24 +61,24 @@ export function findNoteFiles(dir: string) {
 
 export function notesFromFiles(
 	paths: Array<string>,
-	{ noteTypes, root = "", sitedir }: {
+	{ noteTypes, srcdir, sitedir = "site/" }: {
 		noteTypes: NoteTypes
-		root?: string
-		sitedir
+		srcdir: string
+		sitedir?: string
 	},
 ): { [name: string]: Note } {
-	const notes: { [name: string]: NoteInfo } = {}
+	const noteInfo: { [name: string]: NoteInfo } = {}
 
 	// for each path, extract note name, etc
 	for (const path of paths) {
 		const parts = Path.parse(path)
 
 		const name = parts.name.replace(/\.note$/, "")
-		const rel = Path.relative(root, parts.dir)
+		const rel = Path.relative(srcdir, parts.dir)
 		const dir = rel.length ? rel.split(Path.SEPARATOR) : []
 
-		if (!(name in notes)) {
-			notes[name] = {
+		if (!(name in noteInfo)) {
+			noteInfo[name] = {
 				name,
 				dir,
 				type: Note,
@@ -87,20 +87,20 @@ export function notesFromFiles(
 		} else {
 			// don't allow notes of same name but different directories
 			assert(
-				notes[name].dir.join("/") == dir.join("/"),
+				noteInfo[name].dir.join("/") == dir.join("/"),
 				`NoteInfo name '${name}' used by files in different directories: found ${path} and ${
-					Object.values(notes[name].files)
+					Object.values(noteInfo[name].files)
 				}.`,
 			)
 		}
 
 		const ext = parts.ext.slice(1)
-		notes[name].files[ext] = new LazyFile(path)
+		noteInfo[name].files[ext] = new LazyFile(path)
 	}
 
 	// deduce note types from file extensions present
-	for (const name in notes) {
-		const extensions = Object.keys(notes[name].files)
+	for (const name in noteInfo) {
+		const extensions = Object.keys(noteInfo[name].files)
 		const type = detectNoteKind(noteTypes, new Set(extensions))
 		if (type === undefined) {
 			console.error(
@@ -110,22 +110,23 @@ export function notesFromFiles(
 			)
 			continue
 		} else {
-			notes[name].type = type
+			noteInfo[name].type = type
 		}
 	}
 
-	return Object.fromEntries(
-		Object.entries(notes).map(([name, note]) => {
-			const NoteClass = note.type
-			const instance = new NoteClass({
-				name: note.name,
-				dir: note.dir,
-				files: note.files,
-				sitedir: sitedir,
-			})
-			return [name, instance]
-		}),
-	)
+	const notes: { [name: string]: Note } = {}
+	for (const name in noteInfo) {
+		const info = noteInfo[name]
+		const NoteClass = info.type
+		notes[name] = new NoteClass({
+			name: info.name,
+			dir: info.dir,
+			files: info.files,
+			sitedir: sitedir,
+		})
+	}
+
+	return notes
 }
 
 export interface NoteFolder {
@@ -155,14 +156,16 @@ export function notesByFolder(
 
 export class Note {
 	static extensionCombo: string[] = []
-	static description: string = "generic note"
 
 	name: string
 	dir: string[]
 	files: { [extension: string]: LazyFile }
 	sitedir: string
 
+	static description: string | null = null
 	get description() {
+		const staticDescription = (this.constructor as typeof Note).description
+		if (staticDescription !== null) return staticDescription
 		return Object.keys(this.files).join(", ")
 	}
 
@@ -224,7 +227,7 @@ export class Project {
 		const files = findNoteFiles(this.srcdir)
 		const notes = notesFromFiles(files, {
 			noteTypes: this.noteTypes,
-			root: this.srcdir,
+			srcdir: this.srcdir,
 			sitedir: this.sitedir,
 		})
 		const tree = notesByFolder(notes)

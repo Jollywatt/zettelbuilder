@@ -8,14 +8,14 @@ import {
 } from "../src/themes/minimal.tsx"
 
 const project = new Project({
-	// noteTypes: {
-	// 	"markdown": ["md"],
-	// 	"typst pdf": ["typ", "pdf"],
-	// 	"plain text": ["txt"],
-	// },
-	noteTypes: [MarkdownNote, PlainTextNote, ExternalURLNote, TypstNote],
+	noteTypes: [
+		MarkdownNote,
+		PlainTextNote,
+		ExternalURLNote,
+		TypstNote,
+	],
 	srcdir: "test/example-notes",
-	sitedir: "build/",
+	sitedir: "site/",
 	builder: build,
 })
 

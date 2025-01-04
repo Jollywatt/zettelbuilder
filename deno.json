@@ -1,7 +1,7 @@
 {
 	"tasks": {
-		"test": "deno test --watch --allow-read --allow-write=build/ --allow-env",
-		"serve": "deno run -A npm:browser-sync start --server build/ --watch"
+		"test": "deno test --watch --allow-read --allow-write=site/ --allow-env",
+		"serve": "deno run -A npm:browser-sync start --server site/ --watch"
 	},
 	"imports": {
 		"@deno/gfm": "jsr:@deno/gfm@^0.10.0",

@@ -115,12 +115,11 @@ export class PlainTextNote extends Note {
 export class ExternalURLNote extends Note {
 	static override extensionCombo = ["url"]
 
-	#url: URL | null = null
-
 	override get description() {
 		return `${this.url.host} link`
 	}
 
+	#url: URL | null = null
 	get url(): URL {
 		if (this.#url === null) {
 			const match = this.files.url.content.match(/https?:.*/)
