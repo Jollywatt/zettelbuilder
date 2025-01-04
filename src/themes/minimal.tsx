@@ -1,31 +1,48 @@
 import { Note, NoteFolder, Project } from "../analyse.tsx"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
 
-const base = ({ head, body }) => (
-	<html>
-		<head>
-			<meta charSet="UTF-8" />
-			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-			{head}
-		</head>
-		<body>{body}</body>
-	</html>
-)
-
 const json = (obj) => <pre>{JSON.stringify(obj, null, 2)}</pre>
 
-const indexPage = (tree: NoteFolder) =>
-	base({
-		head: <title>Index</title>,
-		body: (
+function Base({ head, children }) {
+	return (
+		<html lang="en">
+			<head>
+				<meta charSet="UTF-8" />
+				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+				{head}
+			</head>
+			<body>{children}</body>
+		</html>
+	)
+}
+
+function NotePage({ note, children, head = <></> }) {
+	head = (
+		<>
+			<title>Notes | {note.name}</title>
+			{head}
+		</>
+	)
+	return (
+		<Base head={head}>
+			<NoteHeader note={note} />
+			<main>{children}</main>
+		</Base>
+	)
+}
+
+function indexPage(tree: NoteFolder) {
+	return (
+		<Base head={<title>Index</title>}>
 			<main>
 				<h1>Index</h1>
 				<p>This is the minimal theme.</p>
 				<h2>Notes by folder</h2>
 				{toc(tree)}
 			</main>
-		),
-	})
+		</Base>
+	)
+}
 
 const tocEntry = (note: Note) => (
 	<li>
@@ -52,70 +69,45 @@ function toc(node: NoteFolder) {
 	)
 }
 
-const header = (note) => (
-	<p>
-		<b>
-			<a href="/">Index</a> / <span>{note.name}</span>
-		</b>
-	</p>
-)
+function NoteHeader({ note }) {
+	return (
+		<p>
+			<b>
+				<a href="/">Index</a> / <span>{note.name}</span>
+			</b>
+		</p>
+	)
+}
 
-const defaultRenderer = (note) =>
-	base({
-		head: <title>{note.name}</title>,
-		body: (
-			<main>
-				{header(note)}
-				No renderer is defined for note type <code>{note.type}</code>.
-				<pre>{JSON.stringify(note, null, 2)}</pre>
-			</main>
-		),
-	})
+const defaultRenderer = (note) => (
+	<NotePage note={note}>
+		No renderer is defined for note type <code>{note.type}</code>.
+		<pre>{JSON.stringify(note, null, 2)}</pre>
+	</NotePage>
+)
 
 const noteRenderers: { [noteType: string]: Function } = {}
 
-noteRenderers["markdown"] = async function (note) {
+noteRenderers["markdown"] = (note) => {
 	let md = note.files.md.content
-	md = md
 		.replace(/\(@([-\w]+)\)/g, (_, name) => `(${name}.html)`)
 		.replace(/@([-\w]+)/g, (handle, name) => `[${handle}](${name}.html)`)
 	const html = renderMarkdown(md)
-	return base({
-		head: (
-			<>
-				<title>{note.name}</title>
-				<style>{CSS}</style>
-			</>
-		),
-		body: (
-			<>
-				{header(note)}
-				<pre>{md}</pre>
-				<pre>{html}</pre>
-				<main
-					dangerouslySetInnerHTML={{ __html: html }}
-					className="markdown-body"
-				>
-				</main>
-			</>
-		),
-	})
+	return (
+		<NotePage note={note} head={<style>{CSS}</style>}>
+			<div
+				dangerouslySetInnerHTML={{ __html: html }}
+				className="markdown-body"
+			/>
+		</NotePage>
+	)
 }
 
-noteRenderers["plain text"] = async function (note) {
-	const txt = note.files.txt.content
-	return base({
-		head: <title>{note.name}</title>,
-		body: (
-			<>
-				{header(note)}
-				<main>
-					<pre>{txt}</pre>
-				</main>
-			</>
-		),
-	})
-}
+noteRenderers["plain text"] = (note) => (
+	<NotePage note={note}>
+		<pre>{note.files.txt.content}</pre>
+	</NotePage>
+)
 
 export async function build(project: Project) {
 	const { notes, tree } = project.analyse()

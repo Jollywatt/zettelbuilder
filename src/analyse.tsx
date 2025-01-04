@@ -185,7 +185,9 @@ export class Project {
 	renderPage(path: string, page) {
 		const sitepath = Path.join(this.sitedir, path)
 		console.log(`%cWriting%c ${sitepath}`, "font-weight: bold", "")
-		const html = typeof page === "string" ? page : render(page)
+		const html = typeof page === "string"
+			? page
+			: `<!DOCTYPE html>` + render(page, { pretty: true })
 		Deno.writeTextFileSync(sitepath, html)
 	}
 
