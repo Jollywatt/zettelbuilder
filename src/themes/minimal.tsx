@@ -75,7 +75,7 @@ const defaultRenderer = (note) =>
 const noteRenderers: { [noteType: string]: Function } = {}
 
 noteRenderers["markdown"] = async function (note) {
-	let md = await Deno.readTextFile(note.files.md)
+	let md = note.files.md.content
 	md = md
 		.replace(/\(@([-\w]+)\)/g, (_, name) => `(${name}.html)`)
 		.replace(/@([-\w]+)/g, (handle, name) => `[${handle}](${name}.html)`)
@@ -103,7 +103,7 @@ noteRenderers["markdown"] = async function (note) {
 }
 
 noteRenderers["plain text"] = async function (note) {
-	const txt = await Deno.readTextFile(note.files.txt)
+	const txt = note.files.txt.content
 	return base({
 		head: <title>{note.name}</title>,
 		body: (

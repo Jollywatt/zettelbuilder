@@ -1,14 +1,37 @@
-import { walkSync } from "@std/fs"
+import { existsSync, walkSync } from "@std/fs"
 import assert from "node:assert"
 import * as Path from "@std/path"
 import { render } from "preact-render-to-string"
 import { create as BrowserSync } from "browser-sync"
 
+/**
+ * A text file pointer with lazily loaded content.
+ *
+ * The file's content is read and stored on first request.
+ */
+class LazyFile {
+	path: string
+	#content: string | null = null
+
+	constructor(path: string) {
+		existsSync(path)
+		this.path = path
+	}
+
+	get content() {
+		if (this.#content === null) {
+			console.log(`%cReading%c ${this.path}`, "color: yellow", "")
+			this.#content = Deno.readTextFileSync(this.path)
+		}
+		return this.#content
+	}
+}
+
 export interface Note {
 	name: string
 	type: string | null
 	dir: Array<string>
-	files: { [ext: string]: string }
+	files: { [ext: string]: LazyFile }
 }
 
 interface NoteTypes {
@@ -66,7 +89,7 @@ export function notesFromFiles(
 		}
 
 		const ext = parts.ext.slice(1)
-		notes[name].files[ext] = path
+		notes[name].files[ext] = new LazyFile(path)
 	}
 
 	// deduce note types from file extensions present

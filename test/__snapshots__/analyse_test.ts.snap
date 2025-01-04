@@ -7,7 +7,9 @@ snapshot[`note detection 1`] = `
       "maths",
     ],
     files: {
-      md: "maths/a.note.md",
+      md: LazyFile {
+        path: "maths/a.note.md",
+      },
     },
     name: "a",
     type: "Markdown",
@@ -17,7 +19,9 @@ snapshot[`note detection 1`] = `
       "maths",
     ],
     files: {
-      md: "maths/b.note.md",
+      md: LazyFile {
+        path: "maths/b.note.md",
+      },
     },
     name: "b",
     type: "Markdown",
@@ -25,8 +29,12 @@ snapshot[`note detection 1`] = `
   c: {
     dir: [],
     files: {
-      pdf: "c.note.pdf",
-      typ: "c.note.typ",
+      pdf: LazyFile {
+        path: "c.note.pdf",
+      },
+      typ: LazyFile {
+        path: "c.note.typ",
+      },
     },
     name: "c",
     type: "Typst PDF",
