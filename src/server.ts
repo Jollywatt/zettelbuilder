@@ -39,6 +39,32 @@ async function handler(req: Request, { fsRoot, urlRoot }): Promise<Response> {
 	}
 }
 
+class BufferedCallback {
+	callback: Function
+	delay: number
+
+	constructor(callback: Function, { delay }: { delay: number }) {
+		this.callback = callback
+		this.delay = delay
+	}
+
+	waitUntil: number = 0
+	buffered: number = 0
+
+	trigger() {
+		const now = new Date().getTime()
+		const until = this.waitUntil
+		this.waitUntil = now + this.delay
+		this.buffered++
+		if (now <= until) return
+
+		setTimeout(() => {
+			this.callback({ buffered: this.buffered })
+			this.buffered = 0
+		}, this.delay)
+	}
+}
+
 export async function startServer({
 	fsRoot = "site/",
 	urlRoot = "/",
@@ -58,19 +84,19 @@ export async function startServer({
 
 	const fsRootFull = resolve(fsRoot)
 
+	const buildCallback = new BufferedCallback(({ buffered }) => {
+		log("Rebuilding", `site (${buffered} change events buffered)`, "red")
+		for (const websocket of connections) {
+			websocket.send("reload")
+		}
+	}, { delay: 100 })
+
 	// Detect file changes and notify clients
 	async function watchFiles() {
 		for await (const event of watcher) {
 			if (event.kind === "modify" || event.kind === "create") {
-				log(
-					"Change detected",
-					event.paths.map((path) => relative(fsRootFull, path)).join(", "),
-				)
-				for (const websocket of connections) {
-					websocket.send("reload")
-					// rebuild()
-					log("Rebuilding", "site", "red")
-				}
+				// log("Change detected", event.paths.map(path => relative(fsRootFull, path)).join(", "))
+				buildCallback.trigger()
 			}
 		}
 	}
