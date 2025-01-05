@@ -356,7 +356,10 @@ export class Project {
 
 		bs.init({
 			server: this.sitedir,
-			serveStatic: [this.sitedir],
+			serveStatic: {
+				route: this.siteroot,
+				dir: [this.sitedir],
+			},
 			serveStaticOptions: {
 				extensions: ["html"], // pretty urls
 			},

@@ -3,6 +3,15 @@ import { CSS, render as renderMarkdown } from "@deno/gfm"
 
 const SiteName = () => <span>Zettelbuilder 📑</span>
 
+const clientReloadScript = `
+const ws = new WebSocket("ws://"+location.host)
+ws.onmessage = (msg) => {
+	if (msg.data === "reload") {
+		location.reload()
+	}
+}
+`
+
 function Page({ head, children }) {
 	return (
 		<html lang="en">
@@ -11,6 +20,7 @@ function Page({ head, children }) {
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				{head}
 				<style>{CSS}</style>
+				<script dangerouslySetInnerHTML={{ __html: clientReloadScript }} />
 			</head>
 			<body className="markdown-body">{children}</body>
 		</html>
@@ -37,7 +47,7 @@ function IndexPage({ project }: { project: Project }) {
 }
 
 function NoteLink({ note }: { note: Note }) {
-	const sitepath = `${note.name}.html`
+	const sitepath = `${note.name}`
 	return (
 		<span>
 			<a href={sitepath}>
@@ -93,7 +103,7 @@ function NotePage({ note, children, head = <></> }) {
 
 const tocEntry = (note: Note) => (
 	<li>
-		<a href={`${note.name}.html`}>{note.title}</a>
+		<a href={note.name}>{note.title}</a>
 	</li>
 )
 
@@ -117,7 +127,7 @@ function NoteHeader({ note }) {
 	return (
 		<p>
 			<b>
-				<a href="/">
+				<a href={note.siteroot}>
 					<SiteName />
 				</a>{" "}
 				/ <span>{note.title}</span>
