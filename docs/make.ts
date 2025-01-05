@@ -6,6 +6,7 @@ const project = new Project({
 	],
 	srcdir: "docs/src/",
 	sitedir: "docs/site/",
+	siteroot: "/zettelbuilder/",
 	builder: Zetteldocs.build,
 })
 
