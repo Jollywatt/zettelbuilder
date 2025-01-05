@@ -29,7 +29,7 @@ function IndexPage({ project }: { project: Project }) {
 					for Zettelkasten notes.
 				</p>
 				<p>These docs were generated with Zettelbuilder.</p>
-				<h2>Contents</h2>
+				<h2>Contents!</h2>
 				{toc(project.analysis.tree)}
 			</main>
 		</Page>
@@ -132,7 +132,7 @@ export class MarkdownNote extends Note {
 
 	override getTitle() {
 		const match = this.files.md.content.match(/#\s*(.*)/)
-		if (match === null) return "unknown"
+		if (match === null) return "title unknown"
 		return match[1]
 	}
 
