@@ -1,10 +1,6 @@
-import { serve } from "https://deno.land/std@0.182.0/http/server.ts"
-import {
-	extname,
-	join,
-	relative,
-} from "https://deno.land/std@0.182.0/path/mod.ts"
-import { walk } from "https://deno.land/std@0.182.0/fs/mod.ts"
+import { extname, join, relative, resolve } from "@std/path"
+import { walk } from "@std/fs"
+import { serveFile } from "@std/http"
 
 function log(verb, message, color = "white") {
 	console.log(
@@ -14,80 +10,73 @@ function log(verb, message, color = "white") {
 	)
 }
 
-// Get the content type based on the file extension
-function getContentType(filePath: string): string {
-	const ext = extname(filePath)
-	const contentTypes: Record<string, string> = {
-		".html": "text/html",
-		".css": "text/css",
-		".js": "text/javascript",
-		".json": "application/json",
-		".png": "image/png",
-		".jpg": "image/jpeg",
-		".jpeg": "image/jpeg",
-		".svg": "image/svg+xml",
-		".ico": "image/x-icon",
+async function handler(req: Request, { fsRoot, urlRoot }): Promise<Response> {
+	const url = new URL(req.url)
+	let filePath = join(fsRoot, relative(urlRoot, url.pathname))
+
+	try {
+		const fileInfo = await Deno.stat(filePath)
+
+		// If directory, look for index.html
+		if (fileInfo.isDirectory) {
+			filePath = join(filePath, "index.html")
+		}
+	} catch {
+		// Handle "pretty links" by appending ".html" if file not found
+		filePath += ".html"
 	}
-	return contentTypes[ext] || "application/octet-stream"
+
+	try {
+		const file = await Deno.readFile(filePath)
+		return new Response(file, { status: 200 })
+	} catch {
+		const debugInfo = Deno.inspect({
+			url: url.pathname,
+			filePath,
+			cwd: Deno.cwd(),
+		})
+		return new Response(`Not Found: ${debugInfo}`, { status: 404 })
+	}
 }
 
 export async function startServer({
-	staticDir = "site/",
-	siteRoot = "/",
+	fsRoot = "site/",
+	urlRoot = "/",
 	port = 8000,
 	watchPatterns = ["docs/site/", "docs/src/"],
+	rebuild = () => {},
 }: {
-	staticDir?: string // Directory to serve files from
-	siteRoot?: string // Directory to serve files from
+	fsRoot?: string // Directory to serve files from
+	urlRoot?: string // Directory to serve files from
 	port?: number // Server port
 	watchPatterns?: string[] // Glob patterns to watch for changes
+	rebuild?: Function
 }) {
+	urlRoot = join("/", urlRoot)
 	const watcher = Deno.watchFs(watchPatterns)
 	const connections = new Set<WebSocket>()
 
-	// Serve static files
-	async function handler(req: Request): Promise<Response> {
-		const url = new URL(req.url)
-		let filePath = join(staticDir, relative(siteRoot, url.pathname))
-
-		try {
-			const fileInfo = await Deno.stat(filePath)
-
-			// If directory, look for index.html
-			if (fileInfo.isDirectory) {
-				filePath = join(filePath, "index.html")
-			}
-		} catch {
-			// Handle "pretty links" by appending ".html" if file not found
-			filePath += ".html"
-		}
-
-		try {
-			const file = await Deno.readFile(filePath)
-			const contentType = getContentType(filePath)
-			return new Response(file, {
-				status: 200,
-				headers: { "content-type": contentType },
-			})
-		} catch {
-			return new Response("404 Not Found", { status: 404 })
-		}
-	}
+	const fsRootFull = resolve(fsRoot)
 
 	// Detect file changes and notify clients
 	async function watchFiles() {
 		for await (const event of watcher) {
 			if (event.kind === "modify" || event.kind === "create") {
-				log("Change detected", event.paths)
-				for (const ws of connections) {
-					ws.send("reload")
+				log(
+					"Change detected",
+					event.paths.map((path) => relative(fsRootFull, path)).join(", "),
+				)
+				for (const websocket of connections) {
+					websocket.send("reload")
+					// rebuild()
+					log("Rebuilding", "site", "red")
 				}
 			}
 		}
 	}
 
 	// WebSocket endpoint for live reload
-	function wsHandler(req: Request): Response {
+	function handleWebSocket(req: Request): Response {
 		const { socket, response } = Deno.upgradeWebSocket(req)
 		socket.onopen = () => connections.add(socket)
 		socket.onclose = () => connections.delete(socket)
@@ -95,24 +84,15 @@ export async function startServer({
 	}
 
 	// Start the server
-	log("Serving", `from ${staticDir} on http://localhost:${port}`)
+	log("Serving", `from ${fsRoot} on http://localhost:${port}${urlRoot}`)
 	log("Watching", `paths ${watchPatterns.join(", ")}`)
-	serve((req) => {
+	Deno.serve({ port }, (req) => {
 		if (req.headers.get("upgrade") === "websocket") {
-			return wsHandler(req)
+			return handleWebSocket(req)
 		}
-		return handler(req)
-	}, { port })
+		return handler(req, { fsRoot, urlRoot })
+	})
 
 	// Watch for file changes
 	watchFiles()
-}
-
-// Example usage
-if (import.meta.main) {
-	startServer({
-		staticDir: "docs/site",
-		siteRoot: "/zettelbuilder",
-		port: 2020,
-	})
 }
