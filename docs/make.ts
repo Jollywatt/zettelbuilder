@@ -9,6 +9,6 @@ const project = new Project({
 	builder: Zetteldocs.build,
 })
 
-project.build()
 const [command] = Deno.args
 if (command === "serve") project.serve()
+else project.build()

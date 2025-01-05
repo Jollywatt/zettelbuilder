@@ -4,6 +4,14 @@ import * as Path from "@std/path"
 import { render } from "preact-render-to-string"
 import { create as BrowserSync } from "browser-sync"
 
+function log(verb, message, color) {
+	console.log(
+		`%c${verb}%c ${message}`,
+		`color: ${color}; font-weight: bold`,
+		"",
+	)
+}
+
 /**
  * A text file pointer with lazily loaded content.
  *
@@ -20,7 +28,7 @@ class LazyFile {
 
 	get content() {
 		if (this.#content === null) {
-			console.log(`%cReading%c ${this.path}`, "color: yellow", "")
+			log("Reading", this.path, "yellow")
 			this.#content = Deno.readTextFileSync(this.path)
 		}
 		return this.#content
@@ -200,10 +208,10 @@ export class Note {
 	}
 
 	render(): preact.JSX.Element | string {
-		console.log(
-			`%cUsing default renderer%c for ${this.description} note "${this.name}"`,
-			"color: red",
-			"",
+		log(
+			"Using default renderer",
+			`for ${this.description} note "${this.name}"`,
+			"red",
 		)
 		return (
 			<main>
@@ -305,7 +313,7 @@ export class Project {
 
 	renderPage(path: string, page) {
 		const sitepath = Path.join(this.sitedir, path)
-		console.log(`%cWriting%c ${sitepath}`, "font-weight: bold", "")
+		log("Writing", `${sitepath}`, "white")
 		const html = typeof page === "string"
 			? page
 			: `<!DOCTYPE html>` + render(page, { pretty: true })
@@ -313,7 +321,7 @@ export class Project {
 	}
 
 	build() {
-		console.log(`%cBuilding%c site at ${this.sitedir}`, "font-weight: bold", "")
+		log("Building", `site at ${this.sitedir}`, "white")
 		// ensure site directory exists and is empty
 		Deno.mkdirSync(this.sitedir, { recursive: true })
 		Deno.removeSync(this.sitedir, { recursive: true })
@@ -337,12 +345,12 @@ export class Project {
 		}
 
 		bs.watch(Path.join(this.srcdir, "**/*")).on("change", (path) => {
-			console.log(`Detected change: ${path}`)
+			log("Detected change", `in note ${path}`, "cyan")
 			this.build()
 		})
 
 		bs.watch(Deno.mainModule, (path) => {
-			console.log(`Detected change in zettelsite package: ${path}`)
+			log("Detected change", `in zettelsite package ${path}`, "cyan")
 			this.build()
 		})
 

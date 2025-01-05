@@ -1,7 +1,9 @@
 {
 	"tasks": {
 		"test": "deno test --watch --allow-read --allow-write=site/ --allow-env",
-		"serve": "deno run -A npm:browser-sync start --server site/ --watch"
+		"docs-build": "deno test -A docs/make.ts",
+		"docs-watch": "deno test -A --watch docs/make.ts",
+		"docs-serve": "deno run -A docs/make.ts serve"
 	},
 	"imports": {
 		"@deno/gfm": "jsr:@deno/gfm@^0.10.0",
