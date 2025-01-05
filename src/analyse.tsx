@@ -160,6 +160,16 @@ export class Note {
 	sitedir: string
 	siteroot: string
 
+	getTitle(): string {
+		return this.name
+	}
+
+	#title: string | null = null
+	get title(): string {
+		if (this.#title === null) this.#title = this.getTitle()
+		return this.#title
+	}
+
 	static description: string | null = null
 	get description() {
 		const staticDescription = (this.constructor as typeof Note).description
@@ -244,7 +254,12 @@ export class Project {
 	noteTypes: NoteTypes
 	builder: Function
 
-	analysis: ProjectData | null
+	analysis: ProjectData = {
+		files: [],
+		notes: {},
+		tree: { notes: {}, folders: {} },
+		refs: { outgoing: {}, incoming: {} },
+	}
 
 	constructor({
 		srcdir,
@@ -264,7 +279,6 @@ export class Project {
 		this.siteroot = siteroot
 		this.noteTypes = noteTypes
 		this.builder = builder
-		this.analysis = null
 	}
 
 	analyse() {
