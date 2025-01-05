@@ -2,9 +2,9 @@ import { existsSync, walkSync } from "@std/fs"
 import assert from "node:assert"
 import * as Path from "@std/path"
 import { render } from "preact-render-to-string"
-import { create as BrowserSync } from "browser-sync"
+import { startServer } from "./server.ts"
 
-function log(verb, message, color) {
+function log(verb, message = "", color = "white") {
 	console.log(
 		`%c${verb}%c ${message}`,
 		`color: ${color}; font-weight: bold`,
@@ -320,13 +320,13 @@ export class Project {
 		Deno.writeTextFileSync(sitepath, html)
 	}
 
-	build() {
+	async build() {
 		log("Building", `site at ${this.sitedir}`, "white")
 		// ensure site directory exists and is empty
 		Deno.mkdirSync(this.sitedir, { recursive: true })
 		Deno.removeSync(this.sitedir, { recursive: true })
 		Deno.mkdirSync(this.sitedir)
-		this.builder(this)
+		await this.builder(this)
 	}
 
 	serve(
@@ -335,35 +335,14 @@ export class Project {
 			autobuild: Boolean,
 		},
 	) {
-		const bs = BrowserSync()
-
-		if (autoreload) {
-			bs.watch(Path.join(this.sitedir, "**/*.{html,css}")).on(
-				"change",
-				bs.reload,
-			)
-		}
-
-		bs.watch(Path.join(this.srcdir, "**/*")).on("change", (path) => {
-			log("Detected change", `in note ${path}`, "cyan")
-			this.build()
-		})
-
-		bs.watch(Deno.mainModule, (path) => {
-			log("Detected change", `in zettelsite package ${path}`, "cyan")
-			this.build()
-		})
-
-		bs.init({
-			server: this.sitedir,
-			serveStatic: {
-				route: this.siteroot,
-				dir: [this.sitedir],
+		startServer({
+			fsRoot: "docs/site/",
+			urlRoot: "zettelbuilder/",
+			port: 2020,
+			rebuild: () => {
+				log("Rebuilding", "", "red")
+				this.build()
 			},
-			serveStaticOptions: {
-				extensions: ["html"], // pretty urls
-			},
-			open: false,
 		})
 	}
 }
