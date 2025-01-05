@@ -160,6 +160,16 @@ export class Note {
 	sitedir: string
 	siteroot: string
 
+	getTitle(): string {
+		return this.name
+	}
+
+	#title: string | null = null
+	get title(): string {
+		if (this.#title === null) this.#title = this.getTitle()
+		return this.#title
+	}
+
 	static description: string | null = null
 	get description() {
 		const staticDescription = (this.constructor as typeof Note).description
@@ -207,11 +217,17 @@ export class Note {
 function getCrossrefGraph(notes: Note[]) {
 	const outgoing: Record<string, Set<string>> = {}
 	const incoming: Record<string, Set<string>> = {}
-	const allNames = new Set(notes.map(note => note.name))
+	const allNames = new Set(notes.map((note) => note.name))
 	for (const note of notes) {
 		const refs = note.extractRefs(allNames)
 		let undefinedRefs = refs.difference(allNames)
-		if (undefinedRefs.size) throw Error(`Found unknown crossrefs in ${note.description} note "${note.name}": ${Deno.inspect(undefinedRefs)}`)
+		if (undefinedRefs.size) {
+			throw Error(
+				`Found unknown crossrefs in ${note.description} note "${note.name}": ${
+					Deno.inspect(undefinedRefs)
+				}`,
+			)
+		}
 		outgoing[note.name] = refs
 		for (const ref of refs) {
 			if (!(ref in incoming)) incoming[ref] = new Set()
@@ -238,7 +254,12 @@ export class Project {
 	noteTypes: NoteTypes
 	builder: Function
 
-	analysis: ProjectData | null
+	analysis: ProjectData = {
+		files: [],
+		notes: {},
+		tree: { notes: {}, folders: {} },
+		refs: { outgoing: {}, incoming: {} },
+	}
 
 	constructor({
 		srcdir,
@@ -258,7 +279,6 @@ export class Project {
 		this.siteroot = siteroot
 		this.noteTypes = noteTypes
 		this.builder = builder
-		this.analysis = null
 	}
 
 	analyse() {
