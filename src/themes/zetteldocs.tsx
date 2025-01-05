@@ -11,7 +11,9 @@ ws.onmessage = (msg) => {
 	}
 }
 `
-const AutoReloadScript = () => <script dangerouslySetInnerHTML={{ __html: clientReloadScript }} />
+const AutoReloadScript = () => (
+	<script dangerouslySetInnerHTML={{ __html: clientReloadScript }} />
+)
 
 function Page({ head, children }) {
 	return (
@@ -21,7 +23,7 @@ function Page({ head, children }) {
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				{head}
 				<style>{CSS}</style>
-				<AutoReloadScript/>
+				<AutoReloadScript />
 			</head>
 			<body className="markdown-body">{children}</body>
 		</html>
