@@ -61,11 +61,7 @@ export function findNoteFiles(dir: string) {
 
 export function notesFromFiles(
 	paths: Array<string>,
-	{ noteTypes, srcdir, sitedir = "site/" }: {
-		noteTypes: NoteTypes
-		srcdir: string
-		sitedir?: string
-	},
+	project: Project,
 ): { [name: string]: Note } {
 	const noteInfo: { [name: string]: NoteInfo } = {}
 
@@ -74,7 +70,7 @@ export function notesFromFiles(
 		const parts = Path.parse(path)
 
 		const name = parts.name.replace(/\.note$/, "")
-		const rel = Path.relative(srcdir, parts.dir)
+		const rel = Path.relative(project.srcdir, parts.dir)
 		const dir = rel.length ? rel.split(Path.SEPARATOR) : []
 
 		if (!(name in noteInfo)) {
@@ -101,7 +97,7 @@ export function notesFromFiles(
 	// deduce note types from file extensions present
 	for (const name in noteInfo) {
 		const extensions = Object.keys(noteInfo[name].files)
-		const type = detectNoteKind(noteTypes, new Set(extensions))
+		const type = detectNoteKind(project.noteTypes, new Set(extensions))
 		if (type === undefined) {
 			console.error(
 				`Couldn't determine type of note "${name}" with extensions: ${
@@ -122,7 +118,8 @@ export function notesFromFiles(
 			name: info.name,
 			dir: info.dir,
 			files: info.files,
-			sitedir: sitedir,
+			sitedir: project.sitedir,
+			siteroot: project.siteroot,
 		})
 	}
 
@@ -161,6 +158,7 @@ export class Note {
 	dir: string[]
 	files: { [extension: string]: LazyFile }
 	sitedir: string
+	siteroot: string
 
 	static description: string | null = null
 	get description() {
@@ -174,18 +172,20 @@ export class Note {
 		dir,
 		files,
 		sitedir,
+		siteroot,
 	}) {
 		this.name = name
 		this.dir = dir
 		this.files = files
 		this.sitedir = sitedir
+		this.siteroot = siteroot
 	}
 
 	refs: { outgoing: Note[]; incoming: Note[] } = {
 		outgoing: [],
 		incoming: [],
 	}
-	extractRefs(): Set<string> {
+	extractRefs(allNames: Set<string>): Set<string> {
 		return new Set()
 	}
 
@@ -240,6 +240,7 @@ export interface ProjectData {
 export class Project {
 	srcdir: string
 	sitedir: string
+	siteroot: string
 	noteTypes: NoteTypes
 	builder: Function
 
@@ -248,16 +249,19 @@ export class Project {
 	constructor({
 		srcdir,
 		sitedir,
+		siteroot = "/",
 		noteTypes,
 		builder,
 	}: {
 		srcdir: string
 		sitedir: string
+		siteroot?: string
 		noteTypes: NoteTypes
 		builder: Function
 	}) {
 		this.srcdir = srcdir
 		this.sitedir = sitedir
+		this.siteroot = siteroot
 		this.noteTypes = noteTypes
 		this.builder = builder
 		this.analysis = null
@@ -265,11 +269,7 @@ export class Project {
 
 	analyse() {
 		const files = findNoteFiles(this.srcdir)
-		const notes = notesFromFiles(files, {
-			noteTypes: this.noteTypes,
-			srcdir: this.srcdir,
-			sitedir: this.sitedir,
-		})
+		const notes = notesFromFiles(files, this)
 		const tree = notesByFolder(notes)
 		const refs = getCrossrefGraph(Object.values(notes))
 		for (const dir of ["outgoing", "incoming"]) {
