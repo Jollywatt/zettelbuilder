@@ -42,7 +42,7 @@ function IndexPage({ project }: { project: Project }) {
 					for Zettelkasten notes.
 				</p>
 				<p>These docs were generated with Zettelbuilder.</p>
-				<h2>Contents!</h2>
+				<h2>Contents</h2>
 				{toc(project.analysis.tree)}
 			</main>
 		</Page>
@@ -173,11 +173,11 @@ export class MarkdownNote extends Note {
 
 export async function build(project: Project) {
 	const { notes, tree } = project.analyse()
-	project.renderPage("index.html", <IndexPage project={project} />)
+	await project.renderPage("index.html", <IndexPage project={project} />)
 
 	for (const name in notes) {
 		const note = notes[name]
 		const html = await note.render()
-		project.renderPage(`${name}.html`, html)
+		await project.renderPage(`${name}.html`, html)
 	}
 }
