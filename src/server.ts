@@ -1,6 +1,5 @@
 import { extname, join, relative, resolve } from "@std/path"
 import { walk } from "@std/fs"
-import { serveFile } from "@std/http"
 
 function log(verb, message, color = "white") {
 	console.log(
@@ -10,7 +9,50 @@ function log(verb, message, color = "white") {
 	)
 }
 
-async function handler(req: Request, { fsRoot, urlRoot }): Promise<Response> {
+function wait(millis: number) {
+	return new Promise((resolve) => setTimeout(resolve, millis))
+}
+
+class BufferedCallback {
+	callback: Function
+	warmup: number // how long in millis after the most recent trigger to wait before callback
+	cooldown: number // how long in millis after the last callback to wait before accepting more triggers
+
+	constructor(
+		callback: Function,
+		{ warmup, cooldown }: { warmup: number; cooldown: number },
+	) {
+		this.callback = callback
+		this.warmup = warmup
+		this.cooldown = cooldown
+	}
+
+	waitUntil: number = 0
+	buffered: number = 0
+	locked = false
+
+	trigger() {
+		if (this.locked) return
+		const now = new Date().getTime()
+		const until = this.waitUntil
+		this.waitUntil = now + this.warmup
+		this.buffered++
+		if (now <= until) return
+
+		setTimeout(async () => {
+			this.locked = true
+			await this.callback({ buffered: this.buffered })
+			await wait(this.cooldown)
+			this.buffered = 0
+			this.locked = false
+		}, this.warmup)
+	}
+}
+
+async function handleFile(
+	req: Request,
+	{ fsRoot, urlRoot },
+): Promise<Response> {
 	const url = new URL(req.url)
 	let filePath = join(fsRoot, relative(urlRoot, url.pathname))
 
@@ -39,63 +81,47 @@ async function handler(req: Request, { fsRoot, urlRoot }): Promise<Response> {
 	}
 }
 
-class BufferedCallback {
-	callback: Function
-	delay: number
-
-	constructor(callback: Function, { delay }: { delay: number }) {
-		this.callback = callback
-		this.delay = delay
-	}
-
-	waitUntil: number = 0
-	buffered: number = 0
-
-	trigger() {
-		const now = new Date().getTime()
-		const until = this.waitUntil
-		this.waitUntil = now + this.delay
-		this.buffered++
-		if (now <= until) return
-
-		setTimeout(() => {
-			this.callback({ buffered: this.buffered })
-			this.buffered = 0
-		}, this.delay)
-	}
-}
-
 export async function startServer({
-	fsRoot = "site/",
+	fsRoot,
 	urlRoot = "/",
 	port = 8000,
-	watchPatterns = ["docs/site/", "docs/src/"],
-	rebuild = () => {},
+	watchPaths = [],
+	onChange = () => {},
 }: {
-	fsRoot?: string // Directory to serve files from
+	fsRoot: string // Directory to serve files from
 	urlRoot?: string // Directory to serve files from
 	port?: number // Server port
-	watchPatterns?: string[] // Glob patterns to watch for changes
-	rebuild?: Function
+	watchPaths?: string[] // Glob patterns to watch for changes
+	onChange?: Function
 }) {
 	urlRoot = join("/", urlRoot)
-	const watcher = Deno.watchFs(watchPatterns)
-	const connections = new Set<WebSocket>()
-
 	const fsRootFull = resolve(fsRoot)
 
-	const buildCallback = new BufferedCallback(({ buffered }) => {
-		log("Rebuilding", `site (${buffered} change events buffered)`, "red")
-		for (const websocket of connections) {
-			websocket.send("reload")
-		}
-	}, { delay: 100 })
+	const watcher = Deno.watchFs(watchPaths)
+	const sockets = new Set<WebSocket>()
+
+	function logStatus() {
+		console.log(
+			`%cServing%c at %chttp://localhost:${port}${urlRoot}`,
+			"color: cyan; font-weight: bold",
+			"",
+			"text-decoration: underline",
+		)
+		log("Watching", `for changes in ${watchPaths.join(", ")}`, "cyan")
+	}
+
+	const buildCallback = new BufferedCallback(async ({ buffered }) => {
+		console.clear()
+		// log("Watched", `${buffered} file change${buffered == 1 ? "" : "s"}`, 'cyan')
+		await onChange()
+		for (const socket of sockets) socket.send("reload")
+		logStatus()
+	}, { warmup: 100, cooldown: 500 })
 
 	// Detect file changes and notify clients
 	async function watchFiles() {
 		for await (const event of watcher) {
 			if (event.kind === "modify" || event.kind === "create") {
-				// log("Change detected", event.paths.map(path => relative(fsRootFull, path)).join(", "))
 				buildCallback.trigger()
 			}
 		}
@@ -104,21 +130,18 @@ export async function startServer({
 	// WebSocket endpoint for live reload
 	function handleWebSocket(req: Request): Response {
 		const { socket, response } = Deno.upgradeWebSocket(req)
-		socket.onopen = () => connections.add(socket)
-		socket.onclose = () => connections.delete(socket)
+		socket.onopen = () => sockets.add(socket)
+		socket.onclose = () => sockets.delete(socket)
 		return response
 	}
 
-	// Start the server
-	log("Serving", `from ${fsRoot} on http://localhost:${port}${urlRoot}`)
-	log("Watching", `paths ${watchPatterns.join(", ")}`)
 	Deno.serve({ port }, (req) => {
 		if (req.headers.get("upgrade") === "websocket") {
 			return handleWebSocket(req)
 		}
-		return handler(req, { fsRoot, urlRoot })
+		return handleFile(req, { fsRoot, urlRoot })
 	})
 
-	// Watch for file changes
 	watchFiles()
+	logStatus()
 }

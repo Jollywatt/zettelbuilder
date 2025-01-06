@@ -28,7 +28,7 @@ class LazyFile {
 
 	get content() {
 		if (this.#content === null) {
-			log("Reading", this.path, "yellow")
+			// log("Reading", this.path, "yellow")
 			this.#content = Deno.readTextFileSync(this.path)
 		}
 		return this.#content
@@ -311,7 +311,7 @@ export class Project {
 		return this.analysis
 	}
 
-	renderPage(path: string, page) {
+	async renderPage(path: string, page) {
 		const sitepath = Path.join(this.sitedir, path)
 		log("Writing", `${sitepath}`, "white")
 		const html = typeof page === "string"
@@ -321,12 +321,16 @@ export class Project {
 	}
 
 	async build() {
-		log("Building", `site at ${this.sitedir}`, "white")
+		let time = new Date().getTime()
+		log("Building", `site at ${this.sitedir}`, "yellow")
+
 		// ensure site directory exists and is empty
 		Deno.mkdirSync(this.sitedir, { recursive: true })
 		Deno.removeSync(this.sitedir, { recursive: true })
 		Deno.mkdirSync(this.sitedir)
+
 		await this.builder(this)
+		log("Built", `site in ${new Date().getTime() - time}ms`, "green")
 	}
 
 	serve(
@@ -339,10 +343,8 @@ export class Project {
 			fsRoot: "docs/site/",
 			urlRoot: "zettelbuilder/",
 			port: 2020,
-			rebuild: () => {
-				log("Rebuilding", "", "red")
-				this.build()
-			},
+			watchPaths: ["docs/src/"],
+			onChange: () => this.build(),
 		})
 	}
 }
