@@ -82,7 +82,6 @@ async function handleFile(
 	}
 }
 
-
 export async function startServer({
 	buildDir,
 	urlRoot = "/",
@@ -105,7 +104,12 @@ export async function startServer({
 	if (port === null) port = await getPort()
 
 	function logStatus() {
-		console.log(`%cServing%c at %chttp://localhost:${port}${urlRoot}`, "color: cyan; font-weight: bold", "", "text-decoration: underline")
+		console.log(
+			`%cServing%c at %chttp://localhost:${port}${urlRoot}`,
+			"color: cyan; font-weight: bold",
+			"",
+			"text-decoration: underline",
+		)
 		log("Watching", `for changes in ${watchPaths.join(", ")}`, "cyan")
 	}
 
@@ -128,13 +132,12 @@ export async function startServer({
 	function handleWebSocket(req: Request): Response {
 		const { socket, response } = Deno.upgradeWebSocket(req)
 		socket.onopen = () => {
-			log("WebSocket", 'connected')
+			log("WebSocket", "connected")
 			sockets.add(socket)
 		}
 		socket.onclose = () => sockets.delete(socket)
 		return response
 	}
-
 
 	Deno.serve({ port }, (req) => {
 		if (req.headers.get("upgrade") === "websocket") {
@@ -142,7 +145,6 @@ export async function startServer({
 		}
 		return handleFile(req, { buildDir, urlRoot })
 	})
-
 
 	watchFiles()
 	logStatus()

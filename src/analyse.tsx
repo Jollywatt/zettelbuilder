@@ -1,7 +1,7 @@
 import { existsSync, walkSync } from "@std/fs"
 import assert from "node:assert"
 import * as Path from "@std/path"
-import { render } from "preact-render-to-string"
+import { render } from "@preact/render"
 import { startServer } from "./server.ts"
 
 function log(verb, message = "", color = "white") {
