@@ -1,5 +1,4 @@
 import { existsSync, walkSync } from "@std/fs"
-import assert from "node:assert"
 import * as Path from "@std/path"
 import { render } from "@preact/render"
 import { startServer } from "./server.ts"
@@ -90,12 +89,20 @@ export function notesFromFiles(
 			}
 		} else {
 			// don't allow notes of same name but different directories
-			assert(
-				noteInfo[name].dir.join("/") == dir.join("/"),
-				`NoteInfo name '${name}' used by files in different directories: found ${path} and ${
-					Object.values(noteInfo[name].files)
-				}.`,
-			)
+			if (noteInfo[name].dir.join("/") != dir.join("/")) {
+				log(
+					"┌ Repeated name",
+					`"${name}" occurs in different directories:`,
+					"red",
+				)
+				;[path, ...Object.values(noteInfo[name].files).map((file) => file.path)]
+					.forEach((path) => log("├╴", path, "red"))
+				log(
+					"└",
+					`Multi-file notes are expected to be in the same directory.`,
+					"red",
+				)
+			}
 		}
 
 		const ext = parts.ext.slice(1)
@@ -107,10 +114,10 @@ export function notesFromFiles(
 		const extensions = Object.keys(noteInfo[name].files)
 		const type = detectNoteKind(project.noteTypes, new Set(extensions))
 		if (type === undefined) {
-			console.error(
-				`Couldn't determine type of note "${name}" with extensions: ${
-					extensions.join(", ")
-				}`,
+			log(
+				"Unknown type",
+				`of note "${name}" with extensions: ${extensions.join(", ")}`,
+				"orange",
 			)
 			continue
 		} else {
@@ -209,9 +216,9 @@ export class Note {
 
 	render(): preact.JSX.Element | string {
 		log(
-			"Using default renderer",
-			`for ${this.description} note "${this.name}"`,
-			"red",
+			"Default renderer",
+			`used for ${this.description} note "${this.name}"`,
+			"orange",
 		)
 		return (
 			<main>
