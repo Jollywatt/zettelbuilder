@@ -1,4 +1,4 @@
-import { Project, Zetteldocs } from "../src/main.ts"
+import { Project, Zetteldocs } from "../src/mod.ts"
 
 const project = new Project({
 	noteTypes: [
