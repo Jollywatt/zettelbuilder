@@ -51,10 +51,10 @@ class BufferedCallback {
 
 async function handleFile(
 	req: Request,
-	{ fsRoot, urlRoot },
+	{ buildDir, urlRoot },
 ): Promise<Response> {
 	const url = new URL(req.url)
-	let filePath = join(fsRoot, relative(urlRoot, url.pathname))
+	let filePath = join(buildDir, relative(urlRoot, url.pathname))
 
 	try {
 		const fileInfo = await Deno.stat(filePath)
@@ -82,20 +82,20 @@ async function handleFile(
 }
 
 export async function startServer({
-	fsRoot,
+	buildDir,
 	urlRoot = "/",
 	port = 8000,
 	watchPaths = [],
 	onChange = () => {},
 }: {
-	fsRoot: string // Directory to serve files from
-	urlRoot?: string // Directory to serve files from
-	port?: number // Server port
-	watchPaths?: string[] // Glob patterns to watch for changes
+	buildDir: string
+	urlRoot?: string
+	port?: number
+	watchPaths?: string[]
 	onChange?: Function
 }) {
 	urlRoot = join("/", urlRoot)
-	const fsRootFull = resolve(fsRoot)
+	const buildDirFull = resolve(buildDir)
 
 	const watcher = Deno.watchFs(watchPaths)
 	const sockets = new Set<WebSocket>()
@@ -121,16 +121,17 @@ export async function startServer({
 	// Detect file changes and notify clients
 	async function watchFiles() {
 		for await (const event of watcher) {
-			if (event.kind === "modify" || event.kind === "create") {
-				buildCallback.trigger()
-			}
+			buildCallback.trigger()
 		}
 	}
 
 	// WebSocket endpoint for live reload
 	function handleWebSocket(req: Request): Response {
 		const { socket, response } = Deno.upgradeWebSocket(req)
-		socket.onopen = () => sockets.add(socket)
+		socket.onopen = () => {
+			log("WebSocket", "connected")
+			sockets.add(socket)
+		}
 		socket.onclose = () => sockets.delete(socket)
 		return response
 	}
@@ -139,7 +140,7 @@ export async function startServer({
 		if (req.headers.get("upgrade") === "websocket") {
 			return handleWebSocket(req)
 		}
-		return handleFile(req, { fsRoot, urlRoot })
+		return handleFile(req, { buildDir, urlRoot })
 	})
 
 	watchFiles()

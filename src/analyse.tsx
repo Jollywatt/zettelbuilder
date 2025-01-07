@@ -78,7 +78,7 @@ export function notesFromFiles(
 		const parts = Path.parse(path)
 
 		const name = parts.name.replace(/\.note$/, "")
-		const rel = Path.relative(project.srcdir, parts.dir)
+		const rel = Path.relative(project.srcDir, parts.dir)
 		const dir = rel.length ? rel.split(Path.SEPARATOR) : []
 
 		if (!(name in noteInfo)) {
@@ -126,8 +126,8 @@ export function notesFromFiles(
 			name: info.name,
 			dir: info.dir,
 			files: info.files,
-			sitedir: project.sitedir,
-			siteroot: project.siteroot,
+			buildDir: project.buildDir,
+			urlRoot: project.urlRoot,
 		})
 	}
 
@@ -165,8 +165,8 @@ export class Note {
 	name: string
 	dir: string[]
 	files: { [extension: string]: LazyFile }
-	sitedir: string
-	siteroot: string
+	buildDir: string
+	urlRoot: string
 
 	getTitle(): string {
 		return this.name
@@ -189,14 +189,14 @@ export class Note {
 		name,
 		dir,
 		files,
-		sitedir,
-		siteroot,
+		buildDir,
+		urlRoot,
 	}) {
 		this.name = name
 		this.dir = dir
 		this.files = files
-		this.sitedir = sitedir
-		this.siteroot = siteroot
+		this.buildDir = buildDir
+		this.urlRoot = urlRoot
 	}
 
 	refs: { outgoing: Note[]; incoming: Note[] } = {
@@ -256,9 +256,9 @@ export interface ProjectData {
 }
 
 export class Project {
-	srcdir: string
-	sitedir: string
-	siteroot: string
+	srcDir: string
+	buildDir: string
+	urlRoot: string
 	noteTypes: NoteTypes
 	builder: Function
 
@@ -270,27 +270,27 @@ export class Project {
 	}
 
 	constructor({
-		srcdir,
-		sitedir,
-		siteroot = "/",
+		srcDir,
+		buildDir,
+		urlRoot = "/",
 		noteTypes,
 		builder,
 	}: {
-		srcdir: string
-		sitedir: string
-		siteroot?: string
+		srcDir: string
+		buildDir: string
+		urlRoot?: string
 		noteTypes: NoteTypes
 		builder: Function
 	}) {
-		this.srcdir = srcdir
-		this.sitedir = sitedir
-		this.siteroot = siteroot
+		this.srcDir = srcDir
+		this.buildDir = buildDir
+		this.urlRoot = urlRoot
 		this.noteTypes = noteTypes
 		this.builder = builder
 	}
 
 	analyse() {
-		const files = findNoteFiles(this.srcdir)
+		const files = findNoteFiles(this.srcDir)
 		const notes = notesFromFiles(files, this)
 		const tree = notesByFolder(notes)
 		const refs = getCrossrefGraph(Object.values(notes))
@@ -312,7 +312,7 @@ export class Project {
 	}
 
 	async renderPage(path: string, page) {
-		const sitepath = Path.join(this.sitedir, path)
+		const sitepath = Path.join(this.buildDir, path)
 		log("Writing", `${sitepath}`, "white")
 		const html = typeof page === "string"
 			? page
@@ -322,12 +322,12 @@ export class Project {
 
 	async build() {
 		let time = new Date().getTime()
-		log("Building", `site at ${this.sitedir}`, "yellow")
+		log("Building", `site at ${this.buildDir}`, "yellow")
 
 		// ensure site directory exists and is empty
-		Deno.mkdirSync(this.sitedir, { recursive: true })
-		Deno.removeSync(this.sitedir, { recursive: true })
-		Deno.mkdirSync(this.sitedir)
+		Deno.mkdirSync(this.buildDir, { recursive: true })
+		Deno.removeSync(this.buildDir, { recursive: true })
+		Deno.mkdirSync(this.buildDir)
 
 		await this.builder(this)
 		log("Built", `site in ${new Date().getTime() - time}ms`, "green")
@@ -340,10 +340,10 @@ export class Project {
 		},
 	) {
 		startServer({
-			fsRoot: "docs/site/",
-			urlRoot: "zettelbuilder/",
+			buildDir: this.buildDir,
+			urlRoot: this.urlRoot,
 			port: 2020,
-			watchPaths: ["docs/src/"],
+			watchPaths: [this.srcDir],
 			onChange: () => this.build(),
 		})
 	}

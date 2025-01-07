@@ -203,7 +203,7 @@ export class TypstNote extends Note {
 
 	override render() {
 		const pdfFileName = `${this.name}.pdf`
-		Deno.copyFile(this.files.pdf.path, `${this.sitedir}/${pdfFileName}`)
+		Deno.copyFile(this.files.pdf.path, `${this.buildDir}/${pdfFileName}`)
 		return (
 			<NotePage note={this}>
 				<object data={pdfFileName} type="application/pdf" />

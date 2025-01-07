@@ -14,8 +14,8 @@ const project = new Project({
 		ExternalURLNote,
 		TypstNote,
 	],
-	srcdir: "test/example-notes",
-	sitedir: "site/",
+	srcDir: "test/example-notes",
+	buildDir: "site/",
 	builder: build,
 })
 
