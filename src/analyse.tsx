@@ -333,16 +333,10 @@ export class Project {
 		log("Built", `site in ${new Date().getTime() - time}ms`, "green")
 	}
 
-	serve(
-		{ autoreload = true, autobuild = true } = {
-			autoreload: Boolean,
-			autobuild: Boolean,
-		},
-	) {
+	serve() {
 		startServer({
 			buildDir: this.buildDir,
 			urlRoot: this.urlRoot,
-			port: 2020,
 			watchPaths: [this.srcDir],
 			onChange: () => this.build(),
 		})
