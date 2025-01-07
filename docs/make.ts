@@ -4,9 +4,9 @@ const project = new Project({
 	noteTypes: [
 		Zetteldocs.MarkdownNote,
 	],
-	srcdir: "docs/src/",
-	sitedir: "docs/site/",
-	siteroot: "/zettelbuilder/",
+	srcDir: "docs/src/",
+	buildDir: "docs/site/",
+	urlRoot: "/zettelbuilder/",
 	builder: Zetteldocs.build,
 })
 
