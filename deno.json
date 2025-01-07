@@ -1,4 +1,6 @@
 {
+	"name": "zettelbuilder",
+	"version": "1.0.0",
 	"tasks": {
 		"test": "deno test --watch --allow-read --allow-write=site/ --allow-env",
 		"docs-build": "deno test -A docs/make.ts",
@@ -13,8 +15,8 @@
 		"@std/http": "jsr:@std/http@^1.0.12",
 		"@std/path": "jsr:@std/path@^1.0.8",
 		"@std/testing": "jsr:@std/testing@^1.0.8",
-		"@types/react": "npm:@types/react@^19.0.2",
-		"preact": "npm:preact@^10.25.3",
+		"@types/react": "npm:@types/react@^19.0.3",
+		"preact": "npm:preact@^10.25.4",
 		"preact-render-to-string": "npm:preact-render-to-string@^6.5.12"
 	},
 	"compilerOptions": {
