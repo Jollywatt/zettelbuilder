@@ -130,7 +130,7 @@ function NoteHeader({ note }) {
 	return (
 		<p>
 			<b>
-				<a href={note.siteroot}>
+				<a href={note.urlRoot}>
 					<SiteName />
 				</a>{" "}
 				/ <span>{note.title}</span>

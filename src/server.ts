@@ -1,5 +1,6 @@
 import { extname, join, relative, resolve } from "@std/path"
 import { walk } from "@std/fs"
+import { getPort } from "@openjs/port-free"
 
 function log(verb, message, color = "white") {
 	console.log(
@@ -84,13 +85,13 @@ async function handleFile(
 export async function startServer({
 	buildDir,
 	urlRoot = "/",
-	port = 8000,
+	port = null,
 	watchPaths = [],
 	onChange = () => {},
 }: {
 	buildDir: string
 	urlRoot?: string
-	port?: number
+	port?: number | null
 	watchPaths?: string[]
 	onChange?: Function
 }) {
@@ -99,6 +100,8 @@ export async function startServer({
 
 	const watcher = Deno.watchFs(watchPaths)
 	const sockets = new Set<WebSocket>()
+
+	if (port === null) port = await getPort()
 
 	function logStatus() {
 		console.log(
