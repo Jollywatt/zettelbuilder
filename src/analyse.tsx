@@ -343,7 +343,9 @@ export class Project {
 
 		// copy assets folder
 		if (this.assetsDir !== null) {
-			copySync(this.assetsDir, this.buildDir)
+			const dest = Path.join(this.buildDir, "assets")
+			log("Copying", `${this.assetsDir} to ${dest}`)
+			copySync(this.assetsDir, dest)
 		}
 
 		// render index page

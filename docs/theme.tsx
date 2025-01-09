@@ -1,4 +1,4 @@
-import { Note, NoteFolder, Project } from "../analyse.tsx"
+import { Note, NoteFolder, Project } from "@jollywatt/zettelbuilder"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
 
 const SiteName = () => <span>Zettelbuilder 📑</span>
