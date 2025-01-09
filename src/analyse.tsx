@@ -340,12 +340,13 @@ export class Project {
 		log("Built", `site in ${new Date().getTime() - time}ms`, "green")
 	}
 
-	serve() {
+	serve({ port } = { port: null }) {
 		startServer({
 			buildDir: this.buildDir,
 			urlRoot: this.urlRoot,
 			watchPaths: [this.srcDir],
 			onChange: () => this.build(),
+			port: port,
 		})
 	}
 }

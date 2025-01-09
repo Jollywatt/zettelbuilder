@@ -1,6 +1,5 @@
 import { extname, join, relative, resolve } from "@std/path"
 import { walk } from "@std/fs"
-import { getPort } from "@openjs/port-free"
 
 function log(verb, message, color = "white") {
 	console.log(
@@ -82,18 +81,40 @@ async function handleFile(
 	}
 }
 
+export async function checkPort(
+	port: number,
+	hostname = "0.0.0.0",
+): Promise<boolean> {
+	try {
+		const listener = await Deno.listen({ port, hostname })
+		await listener.close()
+		return true
+	} catch {
+		return false
+	}
+}
+
+async function getAvailablePort(): Promise<number> {
+	let port = 3000
+	while (port < 4000) {
+		if (await checkPort(port)) return port
+		port++
+	}
+	throw new Error("Couldn't find a free port")
+}
+
 export async function startServer({
 	buildDir,
 	urlRoot = "/",
-	port = null,
 	watchPaths = [],
 	onChange = () => {},
+	port = null,
 }: {
 	buildDir: string
 	urlRoot?: string
-	port?: number | null
 	watchPaths?: string[]
 	onChange?: Function
+	port?: number | null
 }) {
 	urlRoot = join("/", urlRoot)
 	const buildDirFull = resolve(buildDir)
@@ -101,7 +122,7 @@ export async function startServer({
 	const watcher = Deno.watchFs(watchPaths)
 	const sockets = new Set<WebSocket>()
 
-	if (port === null) port = await getPort()
+	if (port == null) port = await getAvailablePort()
 
 	function logStatus() {
 		console.log(
@@ -139,6 +160,7 @@ export async function startServer({
 		return response
 	}
 
+	log("Port", port)
 	Deno.serve({ port }, (req) => {
 		if (req.headers.get("upgrade") === "websocket") {
 			return handleWebSocket(req)
