@@ -1,5 +1,6 @@
 import { Note, NoteFolder, Project } from "@jollywatt/zettelbuilder"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
+import { join as joinPath } from "@std/path"
 
 const SiteName = () => <span>Zettelbuilder 📑</span>
 
@@ -10,6 +11,10 @@ function Page({ project, head, children }) {
 				<meta charSet="UTF-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				{head}
+				<link
+					rel="stylesheet"
+					href={joinPath(project.urlRoot, "assets/style.css")}
+				/>
 				<style>{CSS}</style>
 			</head>
 			<body className="markdown-body">{children}</body>
@@ -113,7 +118,7 @@ function toc(node: NoteFolder) {
 	)
 }
 
-function NoteHeader({ project, note }) {
+function NoteHeader({ project, note }: { project: Project; note: Note }) {
 	return (
 		<p>
 			<b>
