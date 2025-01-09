@@ -1,7 +1,7 @@
 import { existsSync, walkSync } from "@std/fs"
 import * as Path from "@std/path"
 import { render } from "@preact/render"
-import { startServer } from "./server.ts"
+import { startServer } from "./server.tsx"
 
 function log(verb, message = "", color = "white") {
 	console.log(
