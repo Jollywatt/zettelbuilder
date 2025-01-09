@@ -355,10 +355,12 @@ export class Project {
 	}
 
 	serve({ port }: { port?: null | number } = {}) {
+		const watchPaths = [this.srcDir]
+		if (this.assetsDir !== null) watchPaths.push(this.assetsDir)
 		startServer({
 			buildDir: this.buildDir,
 			urlRoot: this.urlRoot,
-			watchPaths: [this.srcDir],
+			watchPaths,
 			onChange: () => this.build(),
 			port: port,
 		})
