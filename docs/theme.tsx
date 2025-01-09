@@ -3,7 +3,7 @@ import { CSS, render as renderMarkdown } from "@deno/gfm"
 
 const SiteName = () => <span>Zettelbuilder 📑</span>
 
-function Page({ head, children }) {
+function Page({ project, head, children }) {
 	return (
 		<html lang="en">
 			<head>
@@ -19,7 +19,7 @@ function Page({ head, children }) {
 
 export function indexPage(project: Project) {
 	return (
-		<Page head={<title>Index</title>}>
+		<Page project={project} head={<title>Index</title>}>
 			<main>
 				<h1>
 					<SiteName /> documentation
@@ -48,7 +48,7 @@ function NoteLink({ note }: { note: Note }) {
 	)
 }
 
-function NotePage({ note, children, head = <></> }) {
+function NotePage({ project, note, children, head = <></> }) {
 	head = (
 		<>
 			<title>Zettelbuilder / {note.title}</title>
@@ -56,8 +56,8 @@ function NotePage({ note, children, head = <></> }) {
 		</>
 	)
 	return (
-		<Page head={head}>
-			<NoteHeader note={note} />
+		<Page project={project} head={head}>
+			<NoteHeader project={project} note={note} />
 			<main>{children}</main>
 			{note.refs.outgoing.length
 				? (
@@ -113,11 +113,11 @@ function toc(node: NoteFolder) {
 	)
 }
 
-function NoteHeader({ note }) {
+function NoteHeader({ project, note }) {
 	return (
 		<p>
 			<b>
-				<a href={note.urlRoot}>
+				<a href={project.urlRoot}>
 					<SiteName />
 				</a>{" "}
 				/ <span>{note.title}</span>
@@ -142,13 +142,13 @@ export class MarkdownNote extends Note {
 		)
 	}
 
-	override render() {
+	override render(project: Project) {
 		let md = this.files.md.content
 			.replace(/\(@([-\w]+)\)/g, (_, name) => `(${name}.html)`)
 			.replace(/@([-\w]+)/g, (handle, name) => `[${handle}](${name}.html)`)
 		const html = renderMarkdown(md)
 		return (
-			<NotePage note={this} head={<style>{CSS}</style>}>
+			<NotePage project={project} note={this} head={<style>{CSS}</style>}>
 				<div
 					dangerouslySetInnerHTML={{ __html: html }}
 					className="markdown-body"
