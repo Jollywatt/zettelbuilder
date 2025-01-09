@@ -6,8 +6,20 @@ const SiteName = () => <span>Zettelbuilder 📑</span>
 const clientReloadScript = `
 const ws = new WebSocket("ws://"+location.host)
 ws.onmessage = (msg) => {
-	if (msg.data === "reload") {
-		location.reload()
+	if (msg.data === "reload") location.reload()
+}
+ws.onclose = (msg) => {
+	document.body.innerHTML = "Lost connection to <code>" + msg.target.url + "</code>. Trying to reconnect."
+	tryReconnecting()
+
+}
+function tryReconnecting() {
+	let ws = new WebSocket("ws://"+location.host)
+	ws.onopen = () => location.reload()
+	ws.onerror = (msg) => {
+		console.log("Got error", msg)
+		document.body.innerHTML += "."
+		setTimeout(tryReconnecting)
 	}
 }
 `

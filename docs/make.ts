@@ -11,5 +11,7 @@ const project = new Project({
 })
 
 const [command] = Deno.args
-if (command === "serve") project.serve()
-else project.build()
+if (command === "serve") {
+	project.build()
+	project.serve()
+} else project.build()
