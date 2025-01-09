@@ -4,27 +4,41 @@ import { CSS, render as renderMarkdown } from "@deno/gfm"
 const SiteName = () => <span>Zettelbuilder 📑</span>
 
 const clientReloadScript = `
-const ws = new WebSocket("ws://"+location.host)
-ws.onmessage = (msg) => {
-	if (msg.data === "reload") location.reload()
-}
-ws.onclose = (msg) => {
-	document.body.innerHTML = "Lost connection to <code>" + msg.target.url + "</code>. Trying to reconnect."
-	tryReconnecting()
-
-}
-function tryReconnecting() {
+function openWebSocket(onopen) {
 	let ws = new WebSocket("ws://"+location.host)
-	ws.onopen = () => location.reload()
+	ws.onopen = onopen
+	ws.onmessage = (msg) => {
+		if (msg.data === "reload") location.reload()
+	}
 	ws.onerror = (msg) => {
-		console.log("Got error", msg)
-		document.body.innerHTML += "."
-		setTimeout(tryReconnecting)
+		document.getElementById("connection-status").style.opacity = "1"
+		setTimeout(() => {
+			openWebSocket(() => location.reload())
+		}, 10)
 	}
 }
+
+openWebSocket()
 `
-const AutoReloadScript = () => (
-	<script dangerouslySetInnerHTML={{ __html: clientReloadScript }} />
+const ClientReloader = () => (
+	<>
+		<script dangerouslySetInnerHTML={{ __html: clientReloadScript }} />
+		<div
+			id="connection-status"
+			style={{
+				position: "fixed",
+				top: 0,
+				right: 0,
+				background: "red",
+				color: "white",
+				padding: "10px",
+				opacity: 0,
+				transition: "opacity 0.5s ease-in-out 0.5s",
+			}}
+		>
+			Reconnecting...
+		</div>
+	</>
 )
 
 function Page({ head, children }) {
@@ -35,7 +49,7 @@ function Page({ head, children }) {
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				{head}
 				<style>{CSS}</style>
-				<AutoReloadScript />
+				<ClientReloader />
 			</head>
 			<body className="markdown-body">{children}</body>
 		</html>
