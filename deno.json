@@ -1,5 +1,5 @@
 {
-	"name": "zettelbuilder",
+	"name": "@jollywatt/zettelbuilder",
 	"version": "1.0.0",
 	"tasks": {
 		"test": "deno test --watch --allow-read --allow-write=site/ --allow-env",
@@ -30,6 +30,7 @@
 	},
 	"fmt": {
 		"useTabs": true,
-		"semiColons": false
+		"semiColons": false,
+		"exclude": ["site", "docs/src", "*.md"]
 	}
 }
