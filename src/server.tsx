@@ -1,5 +1,45 @@
 import { extname, join, relative, resolve } from "@std/path"
 import { walk } from "@std/fs"
+import { render } from "@preact/render"
+
+const clientReloadScript = `
+function openWebSocket(onopen) {
+	const ws = new WebSocket("ws://"+location.host)
+	ws.onopen = onopen
+	ws.onmessage = (msg) => {
+		if (msg.data === "reload") location.reload()
+	}
+	ws.onerror = (msg) => {
+		document.getElementById("connection-status").style.opacity = "1"
+		setTimeout(() => {
+			openWebSocket(() => location.reload())
+		}, 10)
+	}
+}
+openWebSocket()
+`
+const ClientReloader = () => (
+	<>
+		<script dangerouslySetInnerHTML={{ __html: clientReloadScript }} />
+		<div
+			id="connection-status"
+			style={{
+				position: "fixed",
+				top: 0,
+				right: 0,
+				background: "red",
+				color: "white",
+				padding: "10px",
+				opacity: 0,
+				transition: "opacity 0.5s ease-in-out 0.5s",
+			}}
+		>
+			Reconnecting...
+		</div>
+	</>
+)
+
+const clientReloadInjectionHTML = render(<ClientReloader />)
 
 function log(verb, message, color = "white") {
 	console.log(
@@ -68,16 +108,33 @@ async function handleFile(
 		filePath += ".html"
 	}
 
+	let file
 	try {
-		const file = await Deno.readFile(filePath)
-		return new Response(file, { status: 200 })
-	} catch {
+		// Try to read file
+		file = await Deno.readTextFile(filePath)
+	} catch (error) {
+		// Send error page with debug info if reading fails
 		const debugInfo = Deno.inspect({
 			url: url.pathname,
 			filePath,
 			cwd: Deno.cwd(),
+			error: error,
 		})
 		return new Response(`Not Found: ${debugInfo}`, { status: 404 })
+	}
+
+	if (filePath.endsWith("html")) {
+		// Inject client autoreloader for HTML pages
+		file += clientReloadInjectionHTML
+		const data = new TextEncoder().encode(file)
+		return new Response(data, {
+			status: 200,
+		})
+	} else {
+		// Return other files as-is
+		return new Response(file, {
+			status: 200,
+		})
 	}
 }
 
@@ -153,7 +210,7 @@ export async function startServer({
 	function handleWebSocket(req: Request): Response {
 		const { socket, response } = Deno.upgradeWebSocket(req)
 		socket.onopen = () => {
-			log("WebSocket", "connected")
+			log("Client", `auto-refresh waiting`, "pink")
 			sockets.add(socket)
 		}
 		socket.onclose = () => sockets.delete(socket)
