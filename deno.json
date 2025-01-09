@@ -12,6 +12,8 @@
 		"./themes/zetteldocs": "src/themes/zetteldocs.tsx"
 	},
 	"imports": {
+		// "/": "./",
+		"@jollywatt/zettelbuilder": "./src/mod.ts",
 		"@deno/gfm": "jsr:@deno/gfm@^0.10.0",
 		"@preact/preact": "npm:preact@^10.25.4",
 		"@preact/render": "npm:preact-render-to-string@^6.5.12",

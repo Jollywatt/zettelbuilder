@@ -1,10 +1,12 @@
-import { Project, Zetteldocs } from "../src/mod.ts"
+import { Project } from "@jollywatt/zettelbuilder"
+import * as Theme from "./theme.tsx"
 
 const project = new Project({
 	srcDir: "docs/src/",
 	buildDir: "docs/site/",
+	assetsDir: "docs/assets/",
 	urlRoot: "/zettelbuilder/",
-	theme: Zetteldocs,
+	theme: Theme,
 })
 
 await project.build()
