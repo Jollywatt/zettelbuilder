@@ -201,9 +201,9 @@ export class TypstNote extends Note {
 	static override extensionCombo = ["typ", "pdf"]
 	static override description = "typst pdf"
 
-	override render() {
+	override render(project: Project) {
 		const pdfFileName = `${this.name}.pdf`
-		Deno.copyFile(this.files.pdf.path, `${this.buildDir}/${pdfFileName}`)
+		Deno.copyFile(this.files.pdf.path, `${project.buildDir}/${pdfFileName}`)
 		return (
 			<NotePage note={this}>
 				<object data={pdfFileName} type="application/pdf" />
@@ -218,7 +218,7 @@ export async function build(project: Project) {
 
 	for (const name in notes) {
 		const note = notes[name]
-		const html = await note.render()
+		const html = await note.render(project)
 		project.renderPage(`${name}.html`, html)
 	}
 }

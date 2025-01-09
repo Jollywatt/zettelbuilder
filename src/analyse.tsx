@@ -133,8 +133,6 @@ export function notesFromFiles(
 			name: info.name,
 			dir: info.dir,
 			files: info.files,
-			buildDir: project.buildDir,
-			urlRoot: project.urlRoot,
 		})
 	}
 
@@ -172,8 +170,6 @@ export class Note {
 	name: string
 	dir: string[]
 	files: { [extension: string]: LazyFile }
-	buildDir: string
-	urlRoot: string
 
 	getTitle(): string {
 		return this.name
@@ -196,14 +192,10 @@ export class Note {
 		name,
 		dir,
 		files,
-		buildDir,
-		urlRoot,
 	}) {
 		this.name = name
 		this.dir = dir
 		this.files = files
-		this.buildDir = buildDir
-		this.urlRoot = urlRoot
 	}
 
 	refs: { outgoing: Note[]; incoming: Note[] } = {
@@ -214,7 +206,7 @@ export class Note {
 		return new Set()
 	}
 
-	render(): preact.JSX.Element | string {
+	render(project: Project): preact.JSX.Element | string {
 		log(
 			"Default renderer",
 			`used for ${this.description} note "${this.name}"`,
@@ -355,7 +347,7 @@ export class Project {
 		// render note pages
 		for (const name in notes) {
 			const note = notes[name]
-			const html = await note.render()
+			const html = await note.render(this)
 			await this.renderPage(`${name}.html`, html)
 		}
 
