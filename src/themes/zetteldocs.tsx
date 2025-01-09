@@ -17,7 +17,7 @@ function Page({ head, children }) {
 	)
 }
 
-function IndexPage({ project }: { project: Project }) {
+export function indexPage(project: Project) {
 	return (
 		<Page head={<title>Index</title>}>
 			<main>
@@ -158,13 +158,6 @@ export class MarkdownNote extends Note {
 	}
 }
 
-export async function build(project: Project) {
-	const { notes, tree } = project.analyse()
-	await project.renderPage("index.html", <IndexPage project={project} />)
-
-	for (const name in notes) {
-		const note = notes[name]
-		const html = await note.render()
-		await project.renderPage(`${name}.html`, html)
-	}
-}
+export const noteTypes = [
+	MarkdownNote,
+]

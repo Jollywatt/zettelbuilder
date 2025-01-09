@@ -1,4 +1,4 @@
-import { existsSync, walkSync } from "@std/fs"
+import { copySync, existsSync, walkSync } from "@std/fs"
 import * as Path from "@std/path"
 import { render } from "@preact/render"
 import { startServer } from "./server.tsx"
@@ -265,9 +265,10 @@ export interface ProjectData {
 export class Project {
 	srcDir: string
 	buildDir: string
+	assetsDir: string | null
 	urlRoot: string
 	noteTypes: NoteTypes
-	builder: Function
+	indexPage: Function
 
 	analysis: ProjectData = {
 		files: [],
@@ -279,21 +280,25 @@ export class Project {
 	constructor({
 		srcDir,
 		buildDir,
+		assetsDir = null,
 		urlRoot = "/",
-		noteTypes,
-		builder,
+		theme,
 	}: {
 		srcDir: string
 		buildDir: string
+		assetsDir?: string | null
 		urlRoot?: string
-		noteTypes: NoteTypes
-		builder: Function
+		theme: {
+			noteTypes: NoteTypes
+			indexPage: Function
+		}
 	}) {
 		this.srcDir = srcDir
 		this.buildDir = buildDir
+		this.assetsDir = assetsDir
 		this.urlRoot = urlRoot
-		this.noteTypes = noteTypes
-		this.builder = builder
+		this.noteTypes = theme.noteTypes
+		this.indexPage = theme.indexPage
 	}
 
 	analyse() {
@@ -336,7 +341,22 @@ export class Project {
 		Deno.removeSync(this.buildDir, { recursive: true })
 		Deno.mkdirSync(this.buildDir)
 
-		await this.builder(this)
+		// copy assets folder
+		if (this.assetsDir !== null) {
+			copySync(this.assetsDir, this.buildDir)
+		}
+
+		// render index page
+		const { notes, tree } = this.analyse()
+		await this.renderPage("index.html", this.indexPage(this))
+
+		// render note pages
+		for (const name in notes) {
+			const note = notes[name]
+			const html = await note.render()
+			await this.renderPage(`${name}.html`, html)
+		}
+
 		log("Built", `site in ${new Date().getTime() - time}ms`, "green")
 	}
 
