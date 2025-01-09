@@ -39,7 +39,9 @@ const ClientReloader = () => (
 	</>
 )
 
-const clientReloadInjectionHTML = render(<ClientReloader />)
+const clientReloadInjectionHTML = new TextEncoder().encode(
+	render(<ClientReloader />),
+)
 
 function log(verb, message, color = "white") {
 	console.log(
@@ -108,10 +110,10 @@ async function handleFile(
 		filePath += ".html"
 	}
 
-	let file
+	let bytes: Uint8Array
 	try {
 		// Try to read file
-		file = await Deno.readTextFile(filePath)
+		bytes = await Deno.readFile(filePath)
 	} catch (error) {
 		// Send error page with debug info if reading fails
 		const debugInfo = Deno.inspect({
@@ -125,14 +127,17 @@ async function handleFile(
 
 	if (filePath.endsWith("html")) {
 		// Inject client autoreloader for HTML pages
-		file += clientReloadInjectionHTML
-		const data = new TextEncoder().encode(file)
-		return new Response(data, {
+		const combined = new Uint8Array(
+			bytes.length + clientReloadInjectionHTML.length,
+		)
+		combined.set(bytes)
+		combined.set(clientReloadInjectionHTML, bytes.length)
+		return new Response(combined, {
 			status: 200,
 		})
 	} else {
 		// Return other files as-is
-		return new Response(file, {
+		return new Response(bytes, {
 			status: 200,
 		})
 	}
@@ -217,13 +222,17 @@ export async function startServer({
 		return response
 	}
 
-	log("Port", port)
-	Deno.serve({ port }, (req) => {
-		if (req.headers.get("upgrade") === "websocket") {
-			return handleWebSocket(req)
-		}
-		return handleFile(req, { buildDir, urlRoot })
-	})
+	try {
+		Deno.serve({ port }, (req) => {
+			if (req.headers.get("upgrade") === "websocket") {
+				return handleWebSocket(req)
+			}
+			return handleFile(req, { buildDir, urlRoot })
+		})
+	} catch (error) {
+		log("Failed", `to connect to port ${port}.`, "red")
+		throw error
+	}
 
 	watchFiles()
 	logStatus()
