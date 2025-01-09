@@ -3,9 +3,7 @@
 	"version": "1.0.0",
 	"tasks": {
 		"test": "deno test --watch --allow-read --allow-write=site/ --allow-env",
-		"docs-build": "deno test -A docs/make.ts",
-		"docs-watch": "deno test -A --watch docs/make.ts",
-		"docs-serve": "deno run -A docs/make.ts serve"
+		"docs-serve": "deno run -A --watch --check docs/make.ts serve"
 	},
 	"exports": {
 		".": "src/mod.ts",
