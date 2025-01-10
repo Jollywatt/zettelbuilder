@@ -5,7 +5,6 @@ const project = new Project({
 	srcDir: "docs/src/",
 	buildDir: "docs/site/",
 	assetsDir: "docs/assets/",
-	urlRoot: "/zettelbuilder/",
 	theme: Theme,
 })
 
