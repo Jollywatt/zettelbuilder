@@ -31,6 +31,8 @@ const ClientReloader = () => (
 				color: "white",
 				padding: "10px",
 				opacity: 0,
+				zIndex: 100_000,
+				fontFamily: "sans-serif",
 				transition: "opacity 0.5s ease-in-out 0.5s",
 			}}
 		>
