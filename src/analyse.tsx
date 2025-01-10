@@ -273,7 +273,6 @@ export class Project {
 		srcDir,
 		buildDir,
 		assetsDir = null,
-		urlRoot = "/",
 		theme,
 	}: {
 		srcDir: string
@@ -281,6 +280,7 @@ export class Project {
 		assetsDir?: string | null
 		urlRoot?: string
 		theme: {
+			ROOT: string
 			noteTypes: NoteTypes
 			indexPage: Function
 		}
@@ -288,7 +288,7 @@ export class Project {
 		this.srcDir = srcDir
 		this.buildDir = buildDir
 		this.assetsDir = assetsDir
-		this.urlRoot = urlRoot
+		this.urlRoot = theme.ROOT
 		this.noteTypes = theme.noteTypes
 		this.indexPage = theme.indexPage
 	}
@@ -358,7 +358,7 @@ export class Project {
 		const watchPaths = [this.srcDir]
 		if (this.assetsDir !== null) watchPaths.push(this.assetsDir)
 		startServer({
-			buildDir: this.buildDir,
+			fsRoot: this.buildDir,
 			urlRoot: this.urlRoot,
 			watchPaths,
 			onChange: () => this.build(),

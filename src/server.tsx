@@ -93,10 +93,10 @@ class BufferedCallback {
 
 async function handleFile(
 	req: Request,
-	{ buildDir, urlRoot },
+	{ fsRoot, urlRoot },
 ): Promise<Response> {
 	const url = new URL(req.url)
-	let filePath = join(buildDir, relative(urlRoot, url.pathname))
+	let filePath = join(fsRoot, relative(urlRoot, url.pathname))
 
 	try {
 		const fileInfo = await Deno.stat(filePath)
@@ -166,20 +166,20 @@ async function getAvailablePort(): Promise<number> {
 }
 
 export async function startServer({
-	buildDir,
+	fsRoot,
 	urlRoot = "/",
 	watchPaths = [],
 	onChange = () => {},
 	port = null,
 }: {
-	buildDir: string
+	fsRoot: string
 	urlRoot?: string
 	watchPaths?: string[]
 	onChange?: Function
 	port?: number | null
 }) {
 	urlRoot = join("/", urlRoot)
-	const buildDirFull = resolve(buildDir)
+	const fsRootFull = resolve(fsRoot)
 
 	const watcher = Deno.watchFs(watchPaths)
 	const sockets = new Set<WebSocket>()
@@ -227,7 +227,7 @@ export async function startServer({
 			if (req.headers.get("upgrade") === "websocket") {
 				return handleWebSocket(req)
 			}
-			return handleFile(req, { buildDir, urlRoot })
+			return handleFile(req, { fsRoot, urlRoot })
 		})
 	} catch (error) {
 		log("Failed", `to connect to port ${port}.`, "red")

@@ -2,16 +2,18 @@ import { Note, NoteFolder, Project } from "@jollywatt/zettelbuilder"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
 import { join as joinPath } from "@std/path"
 
+export const ROOT = "/zettelbuilder"
+
 const SiteName = () => <span>Zettelbuilder 📑</span>
 
-function Page({ project, head, children }) {
+function Page({ head, children }) {
 	return (
 		<html lang="en">
 			<head>
 				<meta charSet="UTF-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				{head}
-				<link rel="stylesheet" href={joinPath(project.urlRoot, "assets/style.css")} />
+				<link rel="stylesheet" href={joinPath(ROOT, "assets/style.css")} />
 				<style>{CSS}</style>
 			</head>
 			<body className="markdown-body">{children}</body>
@@ -21,7 +23,7 @@ function Page({ project, head, children }) {
 
 export function indexPage(project: Project) {
 	return (
-		<Page project={project} head={<title>Index</title>}>
+		<Page head={<title>Index</title>}>
 			<main>
 				<h1>
 					<SiteName /> documentation
@@ -38,19 +40,13 @@ export function indexPage(project: Project) {
 	)
 }
 
-function NoteLink({ note }: { note: Note }) {
-	const sitepath = `${note.name}`
-	return (
-		<span>
-			<a href={sitepath}>
-				<code>[{note.name}]</code>
-			</a>{" "}
-			{note.description}
-		</span>
-	)
-}
+const NoteLink = ({ note }: { note: Note }) => (
+	<a className="notelink" href={joinPath(ROOT, note.name)}>
+		{note.title}
+	</a>
+)
 
-function NotePage({ project, note, children, head = <></> }) {
+function NotePage({ note, children, head = <></> }) {
 	head = (
 		<>
 			<title>Zettelbuilder / {note.title}</title>
@@ -58,8 +54,8 @@ function NotePage({ project, note, children, head = <></> }) {
 		</>
 	)
 	return (
-		<Page project={project} head={head}>
-			<NoteHeader project={project} note={note} />
+		<Page head={head}>
+			<NoteHeader note={note} />
 			<main>{children}</main>
 			{note.refs.outgoing.length
 				? (
@@ -95,7 +91,7 @@ function NotePage({ project, note, children, head = <></> }) {
 
 const tocEntry = (note: Note) => (
 	<li>
-		<a href={note.name}>{note.title}</a>
+		<NoteLink note={note} />
 	</li>
 )
 
@@ -115,11 +111,11 @@ function toc(node: NoteFolder) {
 	)
 }
 
-function NoteHeader({ project, note }: {project: Project, note: Note}) {
+function NoteHeader({ note }: { note: Note }) {
 	return (
 		<p>
 			<b>
-				<a href={project.urlRoot}>
+				<a href={ROOT}>
 					<SiteName />
 				</a>{" "}
 				/ <span>{note.title}</span>
@@ -150,7 +146,7 @@ export class MarkdownNote extends Note {
 			.replace(/@([-\w]+)/g, (handle, name) => `[${handle}](${name}.html)`)
 		const html = renderMarkdown(md)
 		return (
-			<NotePage project={project} note={this} head={<style>{CSS}</style>}>
+			<NotePage note={this} head={<style>{CSS}</style>}>
 				<div
 					dangerouslySetInnerHTML={{ __html: html }}
 					className="markdown-body"
