@@ -37,6 +37,9 @@ export function indexPage(project: Project) {
 					for Zettelkasten notes.
 				</p>
 				<p>These docs were generated with Zettelbuilder.</p>
+				<p>
+					<a href={joinPath(ROOT, "reference/")}>API reference</a>
+				</p>
 				<h2>Contents</h2>
 				{toc(project.analysis.tree)}
 			</main>

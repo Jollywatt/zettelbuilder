@@ -1,5 +1,6 @@
 .DS_Store
 build/
 site/
+docs/reference
 *.sublime-project
 *.sublime-workspace

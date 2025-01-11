@@ -1,3 +1,8 @@
+/**
+ * Hello
+ * @module my-module
+ */
+
 import { Note, NoteFolder, Project } from "../analyse.tsx"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
 

@@ -4,7 +4,10 @@ import * as Theme from "./theme.tsx"
 const project = new Project({
 	srcDir: "docs/src/",
 	buildDir: "docs/site/",
-	assetsDir: "docs/assets/",
+	copyPaths: {
+		"docs/assets": "assets",
+		"docs/reference": "reference",
+	},
 	theme: Theme,
 })
 

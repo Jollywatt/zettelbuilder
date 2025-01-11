@@ -167,10 +167,26 @@ export function notesByFolder(
 export class Note {
 	static extensionCombo: string[] = []
 
+	/**
+	 * Unique ID for the note.
+	 *
+	 * This defines the permalink used to reference notes.
+	 */
 	name: string
 	dir: string[]
+	/**
+	 * Note files that belong to this note.
+	 */
 	files: { [extension: string]: LazyFile }
 
+	/**
+	 * Extract the note's full title (as opposed to its name).
+	 *
+	 * Override this if the note files can encode metadata such as a title
+	 * (for example, the first heading of a markdown document could be considered the title).
+	 *
+	 * By default, this falls back to the notes name.
+	 */
 	getTitle(): string {
 		return this.name
 	}
@@ -254,10 +270,22 @@ export interface ProjectData {
 	}
 }
 
+/**
+ * oieof
+ */
 export class Project {
+	/** Path to directory containing note files. */
 	srcDir: string
+	/** Output directory for generated static site files. */
 	buildDir: string
-	assetsDir: string | null
+	/** Files or folders to copy to the output directory.
+	 *
+	 * Useful for including CSS and other static site assets.
+	 *
+	 * Keys are paths to files or folders in the current directory, and values are paths relative to `buildDir`.
+	 */
+	copyPaths: Record<string, string>
+	/** Root directory to display URLs under. */
 	urlRoot: string
 	noteTypes: NoteTypes
 	indexPage: Function
@@ -272,13 +300,12 @@ export class Project {
 	constructor({
 		srcDir,
 		buildDir,
-		assetsDir = null,
+		copyPaths = {},
 		theme,
 	}: {
 		srcDir: string
 		buildDir: string
-		assetsDir?: string | null
-		urlRoot?: string
+		copyPaths?: Record<string, string>
 		theme: {
 			ROOT: string
 			noteTypes: NoteTypes
@@ -287,7 +314,7 @@ export class Project {
 	}) {
 		this.srcDir = srcDir
 		this.buildDir = buildDir
-		this.assetsDir = assetsDir
+		this.copyPaths = copyPaths
 		this.urlRoot = theme.ROOT
 		this.noteTypes = theme.noteTypes
 		this.indexPage = theme.indexPage
@@ -333,11 +360,11 @@ export class Project {
 		Deno.removeSync(this.buildDir, { recursive: true })
 		Deno.mkdirSync(this.buildDir)
 
-		// copy assets folder
-		if (this.assetsDir !== null) {
-			const dest = Path.join(this.buildDir, "assets")
-			log("Copying", `${this.assetsDir} to ${dest}`)
-			copySync(this.assetsDir, dest)
+		// copy assets
+		for (let [src, dest] of Object.entries(this.copyPaths)) {
+			dest = Path.join(this.buildDir, dest)
+			log("Copying", `${src} to ${dest}`)
+			copySync(src, dest)
 		}
 
 		// render index page
@@ -355,8 +382,7 @@ export class Project {
 	}
 
 	serve({ port }: { port?: null | number } = {}) {
-		const watchPaths = [this.srcDir]
-		if (this.assetsDir !== null) watchPaths.push(this.assetsDir)
+		const watchPaths = [this.srcDir, ...Object.keys(this.copyPaths)]
 		startServer({
 			fsRoot: this.buildDir,
 			urlRoot: this.urlRoot,

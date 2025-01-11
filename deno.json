@@ -12,7 +12,6 @@
 		"./themes/zetteldocs": "src/themes/zetteldocs.tsx"
 	},
 	"imports": {
-		// "/": "./",
 		"@jollywatt/zettelbuilder": "./src/mod.ts",
 		"@deno/gfm": "jsr:@deno/gfm@^0.10.0",
 		"@preact/preact": "npm:preact@^10.25.4",
@@ -33,6 +32,6 @@
 	"fmt": {
 		"useTabs": true,
 		"semiColons": false,
-		"exclude": ["site", "docs/src", "*.md"]
+		"exclude": ["site", "docs/src", "*.md", "docs/reference"]
 	}
 }
