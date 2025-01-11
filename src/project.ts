@@ -168,7 +168,10 @@ export interface ProjectData {
 }
 
 /**
- * oieof
+ * Configuration for a Zettelbuilder site.
+ *
+ * This class is used to configure source and target directories, note renderers and themes
+ * and is also used to build and serve the site.
  */
 export class Project {
 	/** Path to directory containing note files. */
@@ -308,7 +311,7 @@ export class Project {
 
 	/**
 	 * Start serving the project and watching for changes.
-	 * 
+	 *
 	 * Changes to files in {@link Project.srcDir} or any of the paths in {@link Project.copyPaths}
 	 * will cause the project to rebuild and refresh any connected clients.
 	 */

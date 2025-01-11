@@ -71,7 +71,7 @@ export class Note {
 	/**
 	 * Detect any cross references appearing in the note, returning a set of note names.
 	 * This is used to build the project's {@link CrossRefs} graph.
-	 * 
+	 *
 	 * Usually, this method should read the contents of one of the note's files and use
 	 * a regular expression to extract the names of all referenced notes.
 	 */
