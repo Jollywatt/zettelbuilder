@@ -1,5 +1,5 @@
-import { extname, join, relative, resolve } from "@std/path"
-import { walk } from "@std/fs"
+import { type extname, join, relative, resolve } from "@std/path"
+import type { walk } from "@std/fs"
 import { render } from "@preact/render"
 
 const clientReloadScript = `

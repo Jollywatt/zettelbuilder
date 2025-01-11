@@ -1,69 +1,31 @@
-import { copySync, existsSync, walkSync } from "@std/fs"
-import * as Path from "@std/path"
-import { render } from "@preact/render"
+import {
+	copySync,
+	type existsSync,
+	LazyFile,
+	log,
+	render,
+	walkSync,
+} from "./utils.ts"
+import { join, parse, relative, SEPARATOR } from "@std/path"
+import { Note, type NoteFolder, type NoteInfo } from "./note.ts"
 import { startServer } from "./server.tsx"
 
-function log(verb, message = "", color = "white") {
-	console.log(
-		`%c${verb}%c ${message}`,
-		`color: ${color}; font-weight: bold`,
-		"",
-	)
-}
-
-/**
- * A text file pointer with lazily loaded content.
- *
- * The file's content is read and stored on first request.
- */
-class LazyFile {
-	path: string
-	#content: string | null = null
-
-	constructor(path: string) {
-		existsSync(path)
-		this.path = path
-	}
-
-	get content() {
-		if (this.#content === null) {
-			// log("Reading", this.path, "yellow")
-			this.#content = Deno.readTextFileSync(this.path)
-		}
-		return this.#content
-	}
-}
-
-interface NoteInfo {
-	name: string
-	type: typeof Note
-	dir: Array<string>
-	files: { [ext: string]: LazyFile }
-}
-
-type NoteTypes = Array<typeof Note>
-
-function detectNoteKind(
-	nt: NoteTypes,
+function detectNoteType(
+	nt: Array<typeof Note>,
 	extensions: Set<string>,
-): typeof Note | undefined {
+): typeof Note {
 	for (const noteClass of nt) {
 		const extSet = new Set(noteClass.extensionCombo)
 		if (extSet.symmetricDifference(new Set(extensions)).size == 0) {
 			return noteClass
 		}
 	}
-	return undefined
-}
-
-export function findNoteFiles(dir: string) {
-	const dirnorm = dir.replace(/\/$/, "")
-	const iter = walkSync(dirnorm, {
-		includeDirs: false,
-		match: [/\.note\.\w+$/],
-	})
-
-	return Array.from(iter).map((entry) => entry.path)
+	log(
+		"Unknown type",
+		`of note "${name}" with extensions: ${Deno.inspect(extensions)}`,
+		"orange",
+	)
+	return Note
 }
 
 export function notesFromFiles(
@@ -74,11 +36,12 @@ export function notesFromFiles(
 
 	// for each path, extract note name, etc
 	for (const path of paths) {
-		const parts = Path.parse(path)
-
+		const parts = parse(path)
 		const name = parts.name.replace(/\.note$/, "")
-		const rel = Path.relative(project.srcDir, parts.dir)
-		const dir = rel.length ? rel.split(Path.SEPARATOR) : []
+		const ext = parts.ext.slice(1)
+
+		const rel = relative(project.srcDir, parts.dir)
+		const dir = rel.length ? rel.split(SEPARATOR) : []
 
 		if (!(name in noteInfo)) {
 			noteInfo[name] = {
@@ -95,8 +58,10 @@ export function notesFromFiles(
 					`"${name}" occurs in different directories:`,
 					"red",
 				)
-				;[path, ...Object.values(noteInfo[name].files).map((file) => file.path)]
-					.forEach((path) => log("├╴", path, "red"))
+				const paths = Object.values(noteInfo[name].files).map((file) =>
+					file.path
+				)
+				for (const p in [path, ...paths]) log("├╴", p, "red")
 				log(
 					"└",
 					`Multi-file notes are expected to be in the same directory.`,
@@ -105,26 +70,16 @@ export function notesFromFiles(
 			}
 		}
 
-		const ext = parts.ext.slice(1)
 		noteInfo[name].files[ext] = new LazyFile(path)
 	}
 
 	// deduce note types from file extensions present
 	for (const name in noteInfo) {
-		const extensions = Object.keys(noteInfo[name].files)
-		const type = detectNoteKind(project.noteTypes, new Set(extensions))
-		if (type === undefined) {
-			log(
-				"Unknown type",
-				`of note "${name}" with extensions: ${extensions.join(", ")}`,
-				"orange",
-			)
-			continue
-		} else {
-			noteInfo[name].type = type
-		}
+		const extensions = new Set(Object.keys(noteInfo[name].files))
+		noteInfo[name].type = detectNoteType(project.noteTypes, extensions)
 	}
 
+	// construct note instances of the applicable subclasses
 	const notes: { [name: string]: Note } = {}
 	for (const name in noteInfo) {
 		const info = noteInfo[name]
@@ -137,11 +92,6 @@ export function notesFromFiles(
 	}
 
 	return notes
-}
-
-export interface NoteFolder {
-	notes: { [name: string]: Note }
-	folders: { [name: string]: NoteFolder }
 }
 
 export function notesByFolder(
@@ -162,79 +112,6 @@ export function notesByFolder(
 	}
 
 	return tree
-}
-
-export class Note {
-	static extensionCombo: string[] = []
-
-	/**
-	 * Unique ID for the note.
-	 *
-	 * This defines the permalink used to reference notes.
-	 */
-	name: string
-	dir: string[]
-	/**
-	 * Note files that belong to this note.
-	 */
-	files: { [extension: string]: LazyFile }
-
-	/**
-	 * Extract the note's full title (as opposed to its name).
-	 *
-	 * Override this if the note files can encode metadata such as a title
-	 * (for example, the first heading of a markdown document could be considered the title).
-	 *
-	 * By default, this falls back to the notes name.
-	 */
-	getTitle(): string {
-		return this.name
-	}
-
-	#title: string | null = null
-	get title(): string {
-		if (this.#title === null) this.#title = this.getTitle()
-		return this.#title
-	}
-
-	static description: string | null = null
-	get description() {
-		const staticDescription = (this.constructor as typeof Note).description
-		if (staticDescription !== null) return staticDescription
-		return Object.keys(this.files).sort().join(", ")
-	}
-
-	constructor({
-		name,
-		dir,
-		files,
-	}) {
-		this.name = name
-		this.dir = dir
-		this.files = files
-	}
-
-	refs: { outgoing: Note[]; incoming: Note[] } = {
-		outgoing: [],
-		incoming: [],
-	}
-	extractRefs(allNames: Set<string>): Set<string> {
-		return new Set()
-	}
-
-	render(project: Project): preact.JSX.Element | string {
-		log(
-			"Default renderer",
-			`used for ${this.description} note "${this.name}"`,
-			"orange",
-		)
-		return (
-			<main>
-				This page was generated by the default note renderer.
-				<pre>{Deno.inspect(this)}</pre>
-			</main>
-		)
-	}
 }
 
 function getCrossrefGraph(notes: Note[]) {
@@ -260,14 +137,34 @@ function getCrossrefGraph(notes: Note[]) {
 	return { outgoing, incoming }
 }
 
+/**
+ * Collection of all cross references between notes detected in the project.
+ *
+ * Outgoing and incoming links refer to notes by {@link Note.name}.
+ */
+export interface CrossRefs {
+	/** Notes linked to by each note. */
+	outgoing: { [name: string]: Set<string> }
+	/** Notes linking to each note. */
+	incoming: { [name: string]: Set<string> }
+}
+
+/**
+ * Type representing the notes, files, and references found in the project.
+ */
 export interface ProjectData {
+	/** Paths to the note files discovered in the project relative to the {@link Project.srcDir} directory. */
 	files: Array<string>
+	/** Notes found in the project by their name. */
 	notes: { [name: string]: Note }
+	/**
+	 * Notes found in the project by the folder they were found in.
+	 *
+	 * This is a tree structure which is helpful for rendering tables of contents.
+	 */
 	tree: NoteFolder
-	refs: {
-		outgoing: { [name: string]: Set<string> }
-		incoming: { [name: string]: Set<string> }
-	}
+	/** Directed graph of cross references detected between notes. */
+	refs: CrossRefs
 }
 
 /**
@@ -275,7 +172,7 @@ export interface ProjectData {
  */
 export class Project {
 	/** Path to directory containing note files. */
-	srcDir: string
+	public srcDir: string
 	/** Output directory for generated static site files. */
 	buildDir: string
 	/** Files or folders to copy to the output directory.
@@ -285,16 +182,39 @@ export class Project {
 	 * Keys are paths to files or folders in the current directory, and values are paths relative to `buildDir`.
 	 */
 	copyPaths: Record<string, string>
-	/** Root directory to display URLs under. */
+	/**
+	 * Root directory to prefix URLs with.
+	 *
+	 * The live server requires requested URLs to start with this root.
+	 */
 	urlRoot: string
-	noteTypes: NoteTypes
+	/**
+	 * Note subclasses which are used to detect and render each type of note.
+	 *
+	 * If a note's file extensions do not match {@link Note.extensionCombo} for any
+	 * of the subclasses provided here, a default renderer is used (with a warning).
+	 */
+	noteTypes: Array<typeof Note>
 	indexPage: Function
 
-	analysis: ProjectData = {
+	/**
+	 * Object which holds project data after {@linkcode Project.analyse} is called.
+	 */
+	public analysis: ProjectData = {
 		files: [],
 		notes: {},
 		tree: { notes: {}, folders: {} },
 		refs: { outgoing: {}, incoming: {} },
+	}
+
+	getNoteFiles() {
+		const dirnorm = this.srcDir.replace(/\/$/, "")
+		const iter = walkSync(dirnorm, {
+			includeDirs: false,
+			match: [/\.note\.\w+$/],
+		})
+
+		return Array.from(iter).map((entry) => entry.path)
 	}
 
 	constructor({
@@ -308,7 +228,7 @@ export class Project {
 		copyPaths?: Record<string, string>
 		theme: {
 			ROOT: string
-			noteTypes: NoteTypes
+			noteTypes: Array<typeof Note>
 			indexPage: Function
 		}
 	}) {
@@ -320,8 +240,13 @@ export class Project {
 		this.indexPage = theme.indexPage
 	}
 
-	analyse() {
-		const files = findNoteFiles(this.srcDir)
+	/**
+	 * Find all notes in the project and detect cross references.
+	 *
+	 * Result is returned and stored in {@link Project.analysis}.
+	 */
+	analyse(): ProjectData {
+		const files = this.getNoteFiles()
 		const notes = notesFromFiles(files, this)
 		const tree = notesByFolder(notes)
 		const refs = getCrossrefGraph(Object.values(notes))
@@ -343,7 +268,7 @@ export class Project {
 	}
 
 	async renderPage(path: string, page) {
-		const sitepath = Path.join(this.buildDir, path)
+		const sitepath = join(this.buildDir, path)
 		log("Writing", `${sitepath}`, "white")
 		const html = typeof page === "string"
 			? page
@@ -362,7 +287,7 @@ export class Project {
 
 		// copy assets
 		for (let [src, dest] of Object.entries(this.copyPaths)) {
-			dest = Path.join(this.buildDir, dest)
+			dest = join(this.buildDir, dest)
 			log("Copying", `${src} to ${dest}`)
 			copySync(src, dest)
 		}
@@ -381,6 +306,12 @@ export class Project {
 		log("Built", `site in ${new Date().getTime() - time}ms`, "green")
 	}
 
+	/**
+	 * Start serving the project and watching for changes.
+	 * 
+	 * Changes to files in {@link Project.srcDir} or any of the paths in {@link Project.copyPaths}
+	 * will cause the project to rebuild and refresh any connected clients.
+	 */
 	serve({ port }: { port?: null | number } = {}) {
 		const watchPaths = [this.srcDir, ...Object.keys(this.copyPaths)]
 		startServer({

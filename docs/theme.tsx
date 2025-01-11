@@ -1,4 +1,4 @@
-import { Note, NoteFolder, Project } from "@jollywatt/zettelbuilder"
+import { Note, type NoteFolder, type Project } from "@jollywatt/zettelbuilder"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
 import { join as joinPath } from "@std/path"
 
@@ -34,7 +34,7 @@ export function indexPage(project: Project) {
 				</h1>
 				<p>
 					This is the documentation for Zettelbuilder, a static site generator
-					for Zettelkasten notes.
+					for Zettelkasten-style collections of notes.
 				</p>
 				<p>These docs were generated with Zettelbuilder.</p>
 				<p>
@@ -141,7 +141,7 @@ export class MarkdownNote extends Note {
 		return match[1]
 	}
 
-	override extractRefs() {
+	override extractRefs(allNames): Set<string> {
 		return new Set(
 			this.files.md.content.matchAll(/@([-\w]+)/g).map((match) => match[1]),
 		)
@@ -163,6 +163,6 @@ export class MarkdownNote extends Note {
 	}
 }
 
-export const noteTypes = [
+export const noteTypes: Array<typeof Note> = [
 	MarkdownNote,
 ]

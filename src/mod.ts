@@ -6,5 +6,7 @@
  * @module
  */
 
-export { Note, type NoteFolder, Project } from "./analyse.tsx"
+export { type CrossRefs, Project, type ProjectData } from "./project.ts"
+export { LazyFile, log } from "./utils.ts"
+export { Note, type NoteFolder } from "./note.ts"
 export * as Minimal from "./themes/minimal.tsx"

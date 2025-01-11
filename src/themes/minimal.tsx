@@ -3,8 +3,10 @@
  * @module my-module
  */
 
-import { Note, NoteFolder, Project } from "../analyse.tsx"
+import { Note, type NoteFolder, type Project } from "../mod.ts"
 import { CSS, render as renderMarkdown } from "@deno/gfm"
+
+export const ROOT = ""
 
 const json = (obj) => <pre>{JSON.stringify(obj, null, 2)}</pre>
 
@@ -80,14 +82,14 @@ function NotePage({ note, children, head = <></> }) {
 	)
 }
 
-function indexPage(tree: NoteFolder) {
+export function indexPage(project: Project) {
 	return (
 		<Base head={<title>Index</title>}>
 			<main>
 				<h1>📑 Index</h1>
 				<p>This is the minimal theme.</p>
 				<h2>Notes by folder</h2>
-				{toc(tree)}
+				{toc(project.analysis.tree)}
 			</main>
 		</Base>
 	)
@@ -217,13 +219,9 @@ export class TypstNote extends Note {
 	}
 }
 
-export async function build(project: Project) {
-	const { notes, tree } = project.analyse()
-	project.renderPage("index.html", indexPage(tree))
-
-	for (const name in notes) {
-		const note = notes[name]
-		const html = await note.render(project)
-		project.renderPage(`${name}.html`, html)
-	}
-}
+export const noteTypes = [
+	MarkdownNote,
+	PlainTextNote,
+	ExternalURLNote,
+	TypstNote,
+]
