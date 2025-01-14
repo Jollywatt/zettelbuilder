@@ -2,9 +2,10 @@
 	"name": "@jollywatt/zettelbuilder",
 	"version": "1.0.0",
 	"tasks": {
-		"test": "deno test --watch --allow-read --allow-write=site/ --allow-env",
-		"docs-serve": "deno run -A --watch --check docs/make.ts serve",
-		"doc": "deno doc --html --output=docs/reference --name=Zettelbuilder src/mod.ts"
+		"doc": "deno doc --html --output=docs/reference --name=Zettelbuilder src/mod.ts",
+		"build": "deno run --allow-read=. --allow-write=docs/site/ --deny-env docs/make.ts",
+		"test": "deno test --watch --allow-read --allow-write=site/ --deny-env",
+		"serve": "deno run -A --watch --check docs/make.ts serve"
 	},
 	"exports": {
 		".": "./src/mod.ts"

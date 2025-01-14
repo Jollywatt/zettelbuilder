@@ -37,8 +37,10 @@ jobs:
         uses: denoland/setup-deno@v1
         with:
           deno-version: v2.1.4
-      - name: Build documentation site
-        run: deno run -A docs/make.ts
+      - name: Build documentation
+        run: deno task doc
+      - name: Build site
+        run: deno task build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
